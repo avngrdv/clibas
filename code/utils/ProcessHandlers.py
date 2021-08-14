@@ -1298,7 +1298,7 @@ class FastqParser(Handler):
         '''
         fnames = [os.path.join(self.dirs.seq_data, x) for x in os.listdir(self.dirs.seq_data) if x.endswith(".fastq.gz")]
         if not fnames:
-            msg = f'No .fastq.gz files were found in {self.gz_dir}! Aborting.'
+            msg = f'No .fastq.gz files were found in {self.dirs.seq_data}! Aborting.'
             self.logger.error(msg)
             raise IOError(msg)
                 

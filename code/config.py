@@ -4,7 +4,6 @@ from utils.lib_design import LibraryDesign
 experiment = 'unnamed_experiment'
 
 class constants:
-    
     '''
     Underscore symbol (_) is reserved for stop codons;
     Plus symbol (+) is an internally reserved token;
@@ -35,27 +34,8 @@ class constants:
                     'TGC':'C', 'TGT':'C', 'TGA':'_', 'TGG':'W',
                    }
 
+
     bases = ('T', 'C', 'A', 'G')
-    base_calls = {
-                    'T': (1.00, 0.00, 0.00, 0.00),
-                    'C': (0.00, 1.00, 0.00, 0.00),
-                    'A': (0.00, 0.00, 1.00, 0.00),
-                    'G': (0.00, 0.00, 0.00, 1.00),
-                    'K': (0.50, 0.00, 0.00, 0.50),
-                    'R': (0.00, 0.00, 0.50, 0.50),
-                    'Y': (0.50, 0.50, 0.00, 0.00),
-                    'S': (0.00, 0.50, 0.00, 0.50),
-                    'W': (0.50, 0.00, 0.50, 0.00),
-                    'M': (0.00, 0.50, 0.50, 0.00),
-                    'D': (0.34, 0.00, 0.33, 0.33),
-                    'H': (0.34, 0.33, 0.33, 0.00),
-                    'V': (0.00, 0.34, 0.33, 0.33),                                
-                    'B': (0.34, 0.33, 0.00, 0.33),
-                    'N': (0.25, 0.25, 0.25, 0.25)
-                    
-                 }
-
-
     complement_table = str.maketrans('ACTGN', 'TGACN')
 
     global _reserved_aa_names
@@ -96,7 +76,7 @@ class ParserConfig:
                     
                     lib_type='dna'
                         
-                           )    
+                            )
     
     #peptide library design
     P_design = LibraryDesign(
