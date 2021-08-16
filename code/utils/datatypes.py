@@ -8,9 +8,7 @@ Created on Tue Aug  3 17:45:24 2021
 import numpy as np
 class SequencingSample:
     '''
-    A bundle of datasets (DNA, Q scores, peptides)
-    for a sinle sequencing sample. Enforces everything
-    to be stored in numpy arrays.
+    See below the documentation for Data object.
     '''
     def __init__(self, D=None, Q=None, P=None, name='unnamed'):
         self.D = D
@@ -65,7 +63,7 @@ class SequencingSample:
         return L[0]
 
     def __repr__(self):
-        return f'<SequencingSample object containing {len(self)} entries>'
+        return f'<SequencingSample {self.name} containing {len(self)} entries>'
 
     def __call__(self, ind):
         '''
@@ -91,7 +89,7 @@ class SequencingSample:
 
     def _collapse_internal_state(self):
         '''
-        the internal state array may need to be collapsed.
+        the internal state array may need to be collapsed sometimes.
         what this means: some entries may perfectly match 
         at some stage multiple library designs. 
         if we are taking variable region number 1, and
@@ -227,14 +225,44 @@ class SequencingSample:
     
 class Data:
     '''
-    Data is just a bunch of samples; all sorts of samples
-    can all be held in a single container to facilitate
-    pipeline creation.
+    During analysis, data is stored as a Data object instance. Data is just a
+    container for individual samples, which are stored as SequencingSample objects.
+    Any number of DNA sequences can be a sample in principle, but in practice, 
+    most of the time one sample = a single .fastq file. SequencingSample objects 
+    have four public attributes: 
     
-    NOTE: what's really annoying is that when both TrainingSample
-    and SequencingSample contain only optional fields, Union will
-    recast everything into whatever type is specified first. For
-    this reason, X in TrainingSample is not optional.
+    	SequencingSample.name: sample name (as a str)
+        SequencingSample.D: a list of DNA sequences (can be set as None)
+    	SequencingSample.Q: a list of Q score sequences (can be set as None)
+    	SequencingSample.P: a list of peptide sequences (can be set as None)
+    	
+    These lists are stored as numpy arrays: 1D prior to calling 
+    FastqParser.transform() or FastqParser.translate(), and 2D arrays the 
+    entire time after that; shape: (number of entries, sequence length).
+    Because the sequences for different reads may have a different length,
+    arrays are padded to the longest sequence.
+    
+    The number of entries in each array is kept equal throughout the process 
+    unless one or more of the attributes are set to None. Although any given 
+    filtration routine [for example, FastqParser.q_score_filt()] acts on a single
+    array [SequencingSample.Q in this example], the entries for all three arrays
+    are discarded/kept as a result.
+    
+    Depending on how many and what kinds of templates are specified in 
+    LibraryDesign, any given entry in SequencingSample may in principle be 
+    compatible with several templates simultaneously. Figuring out what entry
+    should be assigned to what kind of template is one of the primary objectives
+    of the parser. Initially, [i.e. right after calling FastqParser.translate()] 
+    the parser deems every sequence to be compatible with every specified 
+    template. As filtration goes on, op by op, this compatibility is refined.
+    I call the state of the assignment for a particular SequencingSample
+    _sample’s internal state_. Some ops [for instance, FastqParser.fetch_at()] 
+    need to know exactly which template should be associated with which entry; 
+    if they find an entry that is compatible with multiple possible templates, 
+    they will “collapse” sample’s internal state, by choosing one compatible
+    template and assigning everything else as incompatible. Refer to the list
+    of ops below for details on which ops can collapse sample’s internal state. 
+    In general, these should be called after filtration ops.
     '''
     def __init__(self, samples=None):
         self.samples = samples

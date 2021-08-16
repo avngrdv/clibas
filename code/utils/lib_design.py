@@ -9,36 +9,11 @@ class Template:
 
     def __init__(self, lib_seq='', monomers={}, wt=None, lib_type=None):
         '''
-        The constructor that holds the information about the library design,
-        i.e. the parent peptide sequence, amino acid positions subject to 
+        The constructor that holds the information about the library for a single
+        template, i.e. the generic peptide sequence, amino acid positions subject to 
         randomization, constant regions, etc. Can store information about
-        the library design at the DNA OR the peptide levels.
-    
-        At this stage, the library design constructor only works for libraries
-        of fixed length (i.e. every peptide is the same length). 
-        
-        Parameters
-        ----------
-        lib_seq :  generic library sequence as dtype=str.
-                   Positions subject to randomization should be
-                   indicated as numerals.
-                   e.g. the string 'LPENGA1111111111111111YPYDVPDYAGELARP'
-                   indicates a peptide sequence that where 'LPENGA' is fixed 
-                   for all library members, whereas the following 16 amino acids
-                   are subject to randomization (mutagenesis, etc).
-                                          
-        monomers:  dict holding all possible monomer encodings for numerals
-                   representing variable regions.
-                   e.g.: {1: ('A', 'C', 'D', 'E' etc),
-                          2: ('S', 'T'),
-                          3: ('W', 'Y')}
-        
-        lib_type:  either 'dna' or 'pep' to specify what kind of library this is.
-        
-        Returns
-        -------
-        A class instance.
-
+        the library design at the DNA OR the peptide levels. See the comments to 
+        LibraryDesign class for more information. 
         '''
         self.lib_seq = lib_seq
         self.monomers = monomers
@@ -159,10 +134,64 @@ class Template:
 
 class LibraryDesign:
     '''
-    A wrapper around all possible template sequences.
-    Basically, just holds a list of Template class instances
-    and a few methods to iterate over them. Monomers should necessarily be
-    shared between individual templates. Library type should be shared as well.
+    LibraryDesign is a key object that specifies what kind of library the parser 
+    should expect. The object can hold information about arbitrary DNA and 
+    peptide libraries using a unified logic as follows. Randomized amino 
+    acids/bases (hereafter _tokens_) are indicated as numerals (0-9), whereas
+    tokens which are not subject to randomization (linker sequences, etc) are 
+    indicated using the standard one letter encoding (A, C, T, G for DNA), 
+    (A, C, D etc for peptides; the encoding must make sense according to the
+     translation table in config.py). A continuous stretch of either random or
+    fixed tokens makes up a “region” in the template sequence. For example:
+    
+                    seq:      ACDEF11133211AWVFRTQ12345YTPPK
+                 region:      [-0-][---1--][--2--][-3-][-4-]
+            is_variable:      False  True   False True False
+    
+    Region assignments are made automatically; in the example above, the 
+    library contains 5 regions; 3 are “constant regions” and 2 are “variable 
+    regions”. Numerals used for variable region tokens should be defined, with 
+    one number corresponding to a particular token set. For example, an NNK
+    codon encodes all 20 amino acids, whereas an NNC codon only 15. Thus, all
+    amino acids derived from NNK codons should be encoded by one number, and
+    another number for NNC-encoded positions. LibraryDesign can take several
+    templates of different length to encode libraries with variable regions
+    of variable size. Below is an example of a LibraryDesign initialization:
+    
+        lib = LibraryDesign(
+            
+                        templates=[
+                                    '211113GSGSGS',
+                                    '2111113GSGSGS',
+                                    '21111113GSGSGS',
+                                  ],
+                
+                        monomers={
+                                  1: ('A', 'C', 'D', 'E', 'F', 'G', 'H'),
+                                  2: ('M'),
+                                  3: ('C')
+                                 },
+                        
+                        lib_type='pep'
+                            
+                           )
+    
+    Note that variable positions can encode a single amino acid 
+    (amino acids 2 and 3). In this way, there is a considerable flexibility in
+    how a particular library can be represented. When initializing LibraryDesign 
+    objects, several rules must be followed:
+    
+    1.	The topology of every passed template must be identical. Topology is 
+    the total number of regions, and the total number of variable regions.
+    Essentially, the templates should only differ in the internal composition 
+    of variable regions.
+    2.	All variable region monomers should be encoded in the translation table
+    (or be one of the four standard DNA bases for DNA libraries; bases N, K etc
+     should be converted to numerals).
+    3.	Two LibraryDesign objects should be created for the parser 
+    (lib_type=’dna’ and lib_type=’pep’). They should have the same number 
+    of templates. The first DNA template should give rise to the first peptide
+    template and so on. LibraryDesign objects are defined in the config file. 
     '''
     
     def __init__(self, templates=[], monomers={}, lib_type=None):

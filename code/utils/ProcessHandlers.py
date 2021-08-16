@@ -362,11 +362,7 @@ class FastqParser(Handler):
         '''
         In silico translation function that converts a DNA sequence into a peptide,
         according to the genetic code as specified in constants.py
-        
-        To translate a DNA sequence into peptide, the former must have an SD
-        sequence 6 bases upstream of the start codon, as specified by most of
-        our library designs.
-        
+               
         ORF translation products lacking stop codons or containing
         any ambiguous symbols will be marked with a '+' sign for downstream
         analysis.
@@ -474,9 +470,29 @@ class FastqParser(Handler):
     #--------------------------------------------
     def translate(self, force_at_frame=None):
         '''
-        The public wrapper around the _dna_to_pep function.
-        Will also transform the arrays to a 2D form and set
-        the internal state for each sample for the first time.
+    	For each sample in Data, perform in silico translation for DNA sequencing data. 
+    	The op will return data containing translated peptide lists. If used, 
+        should be called after fetching the data and (optionally) running
+        the FastqParser.revcom() op.
+        
+        Parameters:
+                force_at_frame: if None, a regular ORF search will be performed. Regular ORF
+                                search entails looking for a Shine-Dalgarno sequence upstream 
+                                of an ATG codon (the exact 5’-UTR sequence signalling an 
+                                ORF should be specified in config.py).
+                                								
+                                if not None, can take values of 0, 1 or 2. This will force-start
+                                the translation at the specified frame regardless of the 
+                                presence or absence of the SD sequence.
+                                
+                                For example:
+                                DNA: TACGACTCACTATAGGGTTAACTTTAAGAAGGA
+                   force_at_frame=0  ----------> 
+                    force_at_frame=1  ---------->
+                     force_at_frame=2  ---------->
+					 
+        Returns:
+                Data object containing peptide sequence information
         '''
         if force_at_frame is not None:
             if force_at_frame not in (0, 1, 2):
@@ -506,10 +522,16 @@ class FastqParser(Handler):
     
     def transform(self):
         '''
-        Deprecated; called automatically during translation.
-        Calls DNA_transform, Q_transorm, and P_transform 
-        to get 2D view of the data. No need to call this
-        on its own if translation is performed.
+        Deprecated in favor of using FastqParser.translate(). If used, should
+        be called after fetching the data and (optionally) running the
+        FastqParser.revcom() op. Transforms the data to a representation 
+        suitable for downstream ops.
+        
+        Parameters:
+                None
+    
+        Returns:
+                Transformed Data object
         '''
         def transform_data(data):
             for i, sample in enumerate(data):
@@ -524,14 +546,16 @@ class FastqParser(Handler):
     
     def revcom(self):
         '''
-        !! Pretransform routine; i.e. has to be called before
-        translation
+        For each sample in Data, get reverse complement of DNA sequences and 
+        reverse sequences of the corresponding Q score. If used, should enqueued 
+        right after the fetching op, and before any downstream ops.
         
-        Reverse complements DNA sequences in the datasets.
-        For now, extended nucleotide nomenuclature is
-        not implemented. 
-        
-        Implementation seems fairly efficient (from stats.exchange)
+        Parameters:
+                None
+    
+        Returns:
+                Transformed Data object holding reverse-complemented DNA
+                and reversed Q score information
         '''        
 
         @np.vectorize
@@ -562,9 +586,20 @@ class FastqParser(Handler):
 
     def len_filter(self, where=None, len_range=None):
         '''
-        Curry the function so that it can be used as a pipeline routine.
-        After some deliberation, a decision was made to perform all 
-        filtering operation exclusively on transofmed (2D) data.
+        For each sample in Data, filter out sequences longer/shorter than the specified 
+        library designs. Alternatively, a length range of sequences to take can be optionally 
+        specified to filter out the entries (NGS reads) outside of this range.
+        
+        Parameters:
+                   where: 'dna' or 'pep' to specify which dataset the op 
+                          should work on.
+						  
+               len_range: either None (filtration will be done according to
+                          the library design rules), or a list of two ints 
+                          that specifies the length range to fetch.						  
+					 
+        Returns:
+                Transformed Data object containing length-filtered data
         '''        
         self._where_check(where)
 
@@ -620,10 +655,33 @@ class FastqParser(Handler):
 
     def cr_filter(self, where=None, loc=None, tol=1):
         '''
-        Have to curry so that it can be used as a pipeline routine.
-        Key parser routine. Can be flexibly used in many ways to 
-        ensure that the constant regions in either dna or pep sequences
-        are intact.
+        For each sample in Data, filter out sequences not containing intact constant
+        regions. Entries (NGS reads) bearing constant regions with amino acids outside
+    	of the library design specification will be discarded.    
+	
+        Parameters:
+                   where: 'dna' or 'pep' to specify which dataset the op 
+                          should work on.
+						  
+                     loc: a list of ints to specify which constant regions 
+                          the op should process. 
+
+                     tol: int; specifies the maximum allowed number of mutations
+                          constant region fetched with where/loc before the 
+                          entry (NGS read) is discarded. For the library from above
+                          
+                seq:      ACDEF11133211AWVFRTQ12345YTPPK
+             region:      [-0-][---1--][--2--][-3-][-4-]
+        is_variable:      False  True   False True False
+                          
+                          calling cr_filter(where='pep', loc=[2], tol=1), will
+                          discard all sequences containing more than 1 mutation
+                          in the 'AWVFRTQ' region. Note that the insertions/deletions
+                          in the constant region are not validated by the parser.					  
+					 
+        Returns:
+                Transformed Data object containg entries with intact 
+                constant regions
         '''        
         self._where_check(where)
 
@@ -681,11 +739,40 @@ class FastqParser(Handler):
 
     def vr_filter(self, where=None, loc=None, sets=None):
         '''
-        Have to curry so that it can be used as a pipeline routine.
-        Works for either dna/pep.
-        
-        set_number is a list of ints, that specifies which monomer subsets
-        should exactly match the spec from the Library 
+        For each sample in Data, filter out sequences not containing intact variable 
+        regions. Entries (NGS reads) bearing variable regions with amino acids outside
+    	of the library design specification will be discarded.
+    
+        Parameters:
+                   where: 'dna' or 'pep' to specify which dataset the op 
+                          should work on.
+						  
+                     loc: a list of ints to specify which variable regions 
+                          the op should process. 
+
+                    sets: a list of ints; a list of monomer subsets to
+                          check. For the library from above
+                          
+                seq:      ACDEF11133211AWVFRTQ12345YTPPK
+             region:      [-0-][---1--][--2--][-3-][-4-]
+        is_variable:      False  True   False True False
+                          
+                          there are five distinct variable amino acids:
+                          1, 2, 3, 4, 5. The config file specifies which specific
+                          amino acids are allowed for each of these numbers.
+                          <vr_filter> op will make sure that each variable position
+                          contains only the "allowed" monomers.					
+
+                          vr_filter(where='pep', loc=[1], sets=[1, 3]) will make
+                          sure that in region loc=1, variable amino acids 1 and 3
+                          match the specification; variable amino acid 2 will not
+                          be checked against in this example. Passing loc=[2] to
+                          <vr_filter> op will raise an error, because it isn't a
+                          variable region.
+					 
+        Returns:
+                Transformed Data object containg entries with intact 
+                variable regions
         '''
         self._where_check(where)
         if where == 'pep':
@@ -764,18 +851,18 @@ class FastqParser(Handler):
 
     def filt_ambiguous(self, where=None):
         '''
-        Have to curry so that it can be used as a pipeline routine.
-        Works for either dna/pep.
-
-        Get rid of reads/peptides containing ambiguous symbols. 
-        For instance, Illumina base calling during NGS can yield
-        'N' nucleotides. Reads containing these will be removed.
-        
-        Analogously, peptides containing amino acids unspecified
-        in config.constants.aas will be removed. Note that according
-        to the self.translation routine, orfs without a stop codon
-        will terminate in an amino acid '+'. Such peptides will be
-        filtered out.
+        For each sample in Data, filter out sequences not containing intact ambiguous 
+        tokens. For DNA, these are "N" nucleotides, which Illumina NGS routines occasionally
+        assign during base calling. For peptides, these are any sequences containing
+        amino acids outside of the translation table specification.	
+    
+        Parameters:
+                   where: 'dna' or 'pep' to specify which dataset the op 
+                          should work on.
+						  
+        Returns:
+                Transformed Data object containg entries without ambiguous
+                tokens
         '''
         self._where_check(where)  
         def filter_ambiguous(data):      
@@ -808,7 +895,15 @@ class FastqParser(Handler):
 
     def drop_data(self, where=None):
         '''
-        Drop all unnecessary datasets for each sample.
+        For each sample in Data, delete datasets specified in 'where'. See documentation 
+        on Data objects above for more information.
+    
+        Parameters:
+                   where: 'dna', 'pep' or 'q' to specify which datasets 
+                          should be dropped. 				
+						  
+        Returns:
+                Transformed Data object without dropped datasets
         '''
         if where not in ('pep', 'dna', 'q'):
             msg = f"Invalid argument passed to <drop_dataset> routine. Expected where = any of ('pep', 'dna', 'q'); got: {where}"
@@ -825,9 +920,20 @@ class FastqParser(Handler):
 
     def q_score_filt(self, minQ=None, loc=None):
         '''
-        Curry the function so that it can be used as a pipeline routine.
-        Make sure that every base call inside a specified region has Q 
-        scores above minQ
+        For each sample in Data, filter out sequences associated with Q scores below 
+        the specified threshold minQ.
+    
+        Parameters:
+                     loc: a list of ints to specify which regions 
+                          the op should process. 
+
+                    minQ: every Q score in the regions specified 
+                          by loc should be greater or equal than 
+						  this value; everything else will be discarded
+                        						  
+						  
+        Returns:
+                Transformed Data object
         '''
         
         if not isinstance(minQ, int):
@@ -862,11 +968,20 @@ class FastqParser(Handler):
 
     def fetch_at(self, where=None, loc=None):
         '''
-        Curry the function so that it can be used as a pipeline routine.  
-        Use for pep or dna. Get rid of constant region sequences for
-        each sample in specified datasets.
+        For each sample in Data, for a dataset specified by 'where', fetch the regions
+        specified by 'loc'. Other regions are discarded. 
         
-        Collapses sample's internal state
+        Collapses sample's internal state.
+        See documentation on Data objects for more information.
+    
+        Parameters:
+                   where: 'dna' or 'pep' to specify which dataset the op 
+                          should work on.
+						  
+                     loc: a list of ints to specify regions to be fetched 
+						  
+        Returns:
+                Transformed Data object		
         '''
         self._where_check(where)               
         if where == 'pep':
@@ -917,9 +1032,15 @@ class FastqParser(Handler):
     
     def unpad(self):
         '''
-        For each dataset in each sample, remove columns where every
-        value is a padding token. Wrapper around a corresponding
-        SeqencingSample method.
+        For each sample in Data, unpads the D, Q, P arrays. For each array, removes 
+    	the columns where every value is a padding token. See documentation on Data 
+        objects for more information.
+
+        Parameters:
+                None	
+						  
+        Returns:
+                Transformed Data object		
         '''        
         def unpad_data(data):
             for sample in data:
@@ -935,8 +1056,19 @@ class FastqParser(Handler):
     #--------------------------------------------
     def len_summary(self, where=None, save_txt=False):
         '''
-        Plot the distribution of dna read/peptide sequence length
-        in each sample. If save_txt == True, also save a txt file.
+        For each sample in Data, compute the distribution of peptide/DNA sequence lengths
+        (specified by 'where') and plot the resulting histogram in the parser output folder
+        as specified by config.py. Optionally, the data can also be written to a txt file.
+    
+        Parameters:
+                   where: 'dna' or 'pep' to specify which dataset the op 
+                          should work on.
+                          						  
+                save_txt: if True, the data will be written to a txt file saved
+                          in the same folder as the .png and .svg plots				
+						  
+        Returns:
+                Data object (no transformation)
         '''
         self._where_check(where)
         def length_summary(data):
@@ -974,10 +1106,16 @@ class FastqParser(Handler):
 
     def convergence_summary(self, where=None):
         '''
-        Perform basic library convergence analysis.
-        Will compute normalized Shannon entropy for
-        each sample, sequence conservation and plot
-        the results.
+        For each sample in Data, perform basic library convergence analysis on a sequence 
+        level. Computes normalized Shannon entropy, and postition-wise sequence conservation. 
+        Plots the results in the parser output folder as specified by config.py.
+    
+        Parameters:
+                   where: 'dna' or 'pep' to specify which dataset the op 
+                          should work on.
+                          						  							  
+        Returns:
+                Data object (no transformation)
         '''
         self._where_check(where)
         from utils.misc import shannon_entropy, get_freqs
@@ -1029,9 +1167,24 @@ class FastqParser(Handler):
 
     def freq_summary(self, where=None, loc=None, save_txt=False):
         '''
-        For a specific region in data (where/loc), compute token-wise
-        frequencies in the sample. See utils.misc.get_freqs for 
-        computation details.
+        Perform basic library convergence analysis on a token level. For each sample in Data, 
+        computes the frequency of each token in the dataset. Plots the results in the parser 
+        output folder as specified by config.py. Optionally, the data can also be written to
+        a txt file.
+        
+        Collapses sample's internal state (see docuemntation for Data objects)
+        	
+        Parameters:
+                   where: 'dna' or 'pep' to specify which dataset the op 
+                          should work on.
+						  
+                     loc: a list of ints to specify regions to be analyzed
+
+                save_txt: if True, the data will be written to a txt file saved
+                          in the same folder as the .png and .svg plots						 
+                          						  							  
+        Returns:
+                Data object (no transformation)
         '''
         self._where_check(where)
         if where == 'pep':
@@ -1099,9 +1252,21 @@ class FastqParser(Handler):
 
     def q_summary(self, loc=None, save_txt=False):
         '''
-        Summarize Q scores for a specific region for every sample.
-        Plot average/std Q score over the span of the region, and
-        optionally write the results into a txt file.
+        For each sample in Data, compute basic statistics of Q scores. 
+    	For each position in regions specified by 'loc', computes the mean and standard deviation
+        of Q scores. Plots the results in the parser output folder as specified by config.py.
+        Optionally, the data can also be written to a txt file.
+        	
+        Collapses sample's internal state (see explanation for Data objects)
+    	
+        Parameters:					  
+                     loc: a list of ints to specify regions to be analyzed
+
+                save_txt: if True, the data will be written to a txt file saved
+                          in the same folder as the .png and .svg plots						 
+                          						  							  
+        Returns:
+                Data object (no transformation)	
         '''
         self._loc_check(loc, self.D_design)
         def q_score_summary(data):
@@ -1161,10 +1326,23 @@ class FastqParser(Handler):
 
     def count_summary(self, where=None, top_n=None, fmt=None):
         '''
-        Count sequences in datasets {where: pep/dna} and write to a file.
-        If top_n is specified, only top_n sequences (by count), otherwise
-        the whole file, will be save. The output can be written to
-        to either a .csv or .fasta file.
+        For each sample in Data, counts the number of times each unique sequence is found in the
+        dataset specified by 'where'. The results are written to a file in the parser output  
+        folder as specified by config.py.
+        
+        Parameters:					  
+                   where: 'dna' or 'pep' to specify which dataset the op 
+                          should work on.
+
+                   top_n: if None, full summary will be created. If
+                          an int is passed, only top_n sequences (by count)
+                          will be written to a file.
+
+                     fmt: the format of the output file. Supported values are
+                          'csv' and 'fasta'.					 
+                          						  							  
+        Returns:
+                Data object (no transformation)
         '''
         self._where_check(where)
         
@@ -1294,7 +1472,14 @@ class FastqParser(Handler):
     
     def stream_from_gz_dir(self, *args):
         '''
-        Analogous to self.stream_from_fastq_dir
+        Fetch all .fastq.gz files from the sequencing_data directory 
+        (as specified in config.py). Should be called as the first op in the workflow.
+        
+            Parameters:
+                    None
+        
+            Returns:
+                    Fetched Fastq data as an instance of Data
         '''
         fnames = [os.path.join(self.dirs.seq_data, x) for x in os.listdir(self.dirs.seq_data) if x.endswith(".fastq.gz")]
         if not fnames:
@@ -1309,8 +1494,14 @@ class FastqParser(Handler):
                           
     def fetch_fastq_from_dir(self):
         '''
-        Fetch all .fastq files in the self.fastq_dir directory
-        and return data as a dict of dicts.
+        Fetch all .fastq files from the sequencing_data directory 
+        (as specified in config.py). Should be called as the first op in the workflow.
+        
+            Parameters:
+                    None
+        
+            Returns:
+                    Fetched Fastq data as an instance of Data
         '''
         def fetch_dir_fastq(*args):
             samples = list()
@@ -1334,14 +1525,22 @@ class FastqParser(Handler):
     
     def save(self, where=None, fmt=None):
         '''
-        For each sample in data, save a dataset specified in 'where'.
-        Files go to the self.dirs.parser_out
-        Can save in .npy (pickled ndarray), .csv (comma-delimited), or
-        .fasta formats.
+        For each sample in Data, save the dataset specified by 'where'. The results are written 
+        to a file in the parser output folder as specified by config.py.
+        
+        Parameters:					  
+                   where: 'dna' or 'pep' to specify which dataset the op 
+                          should work on.
+
+                     fmt: the format of the output file. Supported values are
+                          'npy', 'fasta' and 'csv'					 
+                          						  							  
+        Returns:
+                Data object (no transformation)
         '''
         
-        if fmt not in ('npy', 'csv', 'fasta', 'fastq'):
-            msg = f"<save_data> routine received invalid fmt argument. Acceted any of ('npy', 'csv', 'fasta', 'fastq'); received: {fmt}"
+        if fmt not in ('npy', 'csv', 'fasta'):
+            msg = f"<save_data> routine received invalid fmt argument. Acceted any of ('npy', 'csv', 'fasta'); received: {fmt}"
             self.logger.error(msg)
             raise ValueError(msg)
         
