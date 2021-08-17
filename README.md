@@ -7,7 +7,7 @@ The primary purpose of FastqProcessor is library design matching. Given a partic
 \
 Concomitantly, the tool can collect basic statistics about the data, count sequences, etc.
 ### Motivation
-After working with mRNA-display libraries, I found myself writing and rewriting fastq parser scripts all the time, to accomodate for different workflows. Some libraries encode peptides of a single, fixed length, other don't. Sometimes it is a de novo designed library, and sometimes it's a mutagenesis experiment. I reused my own code, but still had to write entire scripts from scratch for every different application. This package is an attempt to solve this issue by writing a single powerfull parser that can be easily customized for any reasonable application. The goal was to write a package once, and then use it for various applications to create concise (less than 20 lines of code) and readable analysis pipelines. 
+After working with mRNA-display libraries for a while, I found myself writing and rewriting fastq parser scripts all the time to accomodate for different workflows. Some libraries encode peptides of a single, fixed length, other don't. Sometimes it is a de novo designed library, and sometimes it's a mutagenesis experiment. I reused my own code, but still had to write entire scripts from scratch for every different application. FastqProcessor is an attempt to solve this issue by writing a single powerfull parser that can be easily customized for any reasonable application. The goal was to write a package once, and then use it for various applications to create concise (less than 20 lines of code) and human-readable analysis pipelines. 
 # Dependencies
 The code was written and tested for:\
 \
@@ -45,8 +45,7 @@ This will add two ops to the pipeline, but no data fetching or translation will 
 
     pip.run(save_summary=True)
 
-will execute the enqueued ops, one by one, in the specified order, passing data from one op to the next. That’s it. If any outputs are expected, they will be written to a directory specified 
-in config.py; a log file may also be optionally written if desired.
+will execute the enqueued ops, one by one, in the specified order, passing data from one op to the next. That’s it. If any outputs are expected, they will be written to a directory specified in config.py; a log file may also be optionally written if desired.
 
 ## LibraryDesign
 LibraryDesign is a key object that specifies what kind of library the parser should expect. The object can hold information about arbitrary DNA and peptide libraries using a unified logic as follows. Randomized amino acids/bases (hereafter _tokens_) are indicated as numerals (0-9), whereas tokens which are not subject to randomization (linker sequences, etc) are indicated using the standard one letter encoding (A, C, T, G for DNA), (A, C, D etc for peptides; the encoding must make sense according to the translation table in config.py). A continuous stretch of either random or fixed tokens makes up a “region” in the template sequence. For example:
@@ -55,7 +54,7 @@ LibraryDesign is a key object that specifies what kind of library the parser sho
              region:      [-0-][---1--][--2--][-3-][-4-]
         is_variable:      False  True   False True False
 
-Region assignments are made automatically; in the example above, the library contains 5 regions; 3 are “constant regions” and 2 are “variable regions”. Numerals used for variable region tokens should be defined, with one number corresponding to a particular token set. For example, an NNK codon encodes all 20 amino acids, whereas an NNC codon only 15. Thus, all amino acids derived from NNK codons should be encoded by one number, and another number for NNC-encoded positions. LibraryDesign can take several templates of different length to encode libraries with variable regions of variable size. Below is an example of a LibraryDesign initialization:
+Region assignments are made automatically; in the example above, the library contains 5 regions; 3 are “constant regions” and 2 are “variable regions”. Numerals used for variable region tokens should be defined, with one number corresponding to a particular token set. For example, an NNK codon encodes all 20 amino acids, whereas an NNC codon only 15. Thus, all amino acids derived from NNK codons should be encoded by one number, and another number for NNC-encoded positions. LibraryDesign can take several templates of different length to account for libraries with variable regions of variable size. Below is an example of a LibraryDesign initialization:
 
     lib = LibraryDesign(
         
@@ -77,13 +76,11 @@ Region assignments are made automatically; in the example above, the library con
 
 Note that variable positions can encode a single amino acid (amino acids 2 and 3). In this way, there is a considerable flexibility in how a particular library can be represented. When initializing LibraryDesign objects, several rules must be followed:
 
-1.	The topology of every passed template must be identical. Topology is the total number of regions, and the total number of variable regions. Essentially, the templates should only differ in the internal composition of variable regions.
+1.	The topology of every passed template must be identical. Topology is the total number of regions and the total number of variable regions. Essentially, the templates should only differ in the internal composition of variable regions.
 2.	All variable region monomers should be encoded in the translation table (or be one of the four standard DNA bases for DNA libraries; bases N, K etc should be converted to numerals).
-3.	Two LibraryDesign objects should be created for the parser (lib_type=’dna’ and lib_type=’pep’). They should have the same number of templates. The first DNA template should give rise to the first peptide template and so on.
-LibraryDesign objects are defined in the config file. 
+3.	Two LibraryDesign objects should be created for the parser (lib_type=’dna’ and lib_type=’pep’). They should have the same number of templates. The first DNA template should give rise to the first peptide template and so on. LibraryDesign objects are defined in the config file. 
 ## Data
-During analysis, data is stored as a Data object instance. Data is just a container for individual samples, which are stored as SequencingSample objects. Any number of DNA sequences can be a sample in principle, but in practice, most of the time one sample = a single .fastq file.
-SequencingSample objects have four public attributes: 
+During analysis, data is stored as a Data object instance. Data is just a container for individual samples, which are stored as SequencingSample objects. Any number of DNA sequences can be a sample in principle, but in practice, most of the time one sample = a single .fastq file. SequencingSample objects have four public attributes: 
 
 	SequencingSample.name: sample name (as a str)
     SequencingSample.D: a list of DNA sequences (can be set as None)
@@ -433,3 +430,4 @@ Depending on how many and what kinds of templates are specified in LibraryDesign
 # Known issues
 1. After FastqParser.fetch_at() is called, the assignment between fetched sequence regions and LibaryDesign gets broken. It means that no other ops that takes 'loc' as a keyword can be called after FastqParser.fetch_at() [ops that don't take 'loc' as a keyword are ok]. To be fixed.
 2. FastqParser.q_summary() collapses sample's internal state, which can often be inconvenient. To be fixed.
+3. The parser will behave in weird ways for libraries containing ORFs without stop codons (which can happen if just a fraction of the entire ORF is read during NGS). In particular, translation will append a '+' symbol (could even be two, sometimes) to the C-terminus of each sequence. This breaks the FastqParser.filt_ambiguous() op and may have unintended consequences for other ops too. To be fixed.
