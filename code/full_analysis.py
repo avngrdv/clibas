@@ -41,7 +41,7 @@ if __name__ == '__main__':
                 par.vr_filter(where='pep', loc=[0], sets=[1, 2, 3]),
                 par.q_summary(loc=[0, 1, 2], save_txt=True),
                 par.filt_ambiguous(where='pep'),
-                par.q_score_filt(minQ=20, loc=[0]),
+                par.q_score_filt(minQ=20, loc=[1]),
                 par.freq_summary(where='pep', loc=[0], save_txt=True),
                 par.freq_summary(where='dna', loc=[1], save_txt=True),
                 par.fetch_at(where='pep', loc=[0]),
