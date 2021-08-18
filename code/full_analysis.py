@@ -3,6 +3,7 @@
 Created on Sat Aug 8 20:28:10 2021
 @author: Alex Vinogradov
 """
+#to show: enquing process with no run
 
 if __name__ == '__main__':
     
@@ -33,21 +34,21 @@ if __name__ == '__main__':
                 par.translate(),         
                 par.len_summary(where='dna', save_txt=True),
                 par.len_summary(where='pep', save_txt=True),
-                par.len_filter(where='pep'),          
+                par.len_filter(where='pep'),
                 par.convergence_summary(where='dna'),
                 par.convergence_summary(where='pep'),            
-                par.cr_filter(where='pep', loc=[1], tol=2),
+                par.cr_filter(where='pep', loc=[1], tol=3),
                 par.vr_filter(where='pep', loc=[0], sets=[1, 2, 3]),
-                par.q_summary(loc=[0, 1], save_txt=True),
+                par.q_summary(loc=[0, 1, 2], save_txt=True),
                 par.filt_ambiguous(where='pep'),
                 par.q_score_filt(minQ=20, loc=[0]),
                 par.freq_summary(where='pep', loc=[0], save_txt=True),
-                par.freq_summary(where='dna', loc=[0, 1], save_txt=True),
+                par.freq_summary(where='dna', loc=[1], save_txt=True),
                 par.fetch_at(where='pep', loc=[0]),
-                par.count_summary(where='pep', top_n=50, fmt='csv'),
-                par.count_summary(where='pep', top_n=50, fmt='fasta'),
+                par.count_summary(where='pep', top_n=100, fmt='csv'),
+                par.count_summary(where='pep', top_n=100, fmt='fasta'),
                 par.unpad(),
-                par.save(where='pep', fmt='fasta'),
+                par.save(where='pep', fmt='npy'),
              ])
     
     #this will execute the pipeline
