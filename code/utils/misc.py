@@ -6,14 +6,15 @@ Created on Tue Jan 21 12:39:30 2020
 import numpy as np
 
 def get_freqs(arr, tokens):
-    #Create a matrix of zeros and iteratively fill it
-    M = np.zeros((len(tokens), arr.shape[1]))
+    #C: count matrix for tokens over positions in arr
+    C = np.zeros((len(tokens), arr.shape[1]))
     
+    #iteratively fill it
     for i, x in enumerate(tokens):
-        M[i] = np.sum(arr == x, axis=0)
-    
+        C[i] = np.sum(arr == x, axis=0)
+        
     with np.errstate(divide='ignore', invalid='ignore'):
-        freq = np.divide(M, arr.shape[0])
+        freq = np.divide(C, arr.shape[0])
         
     return freq
 

@@ -4,7 +4,7 @@ Created on Fri May 21 20:28:10 2021
 @author: Alex Vinogradov
 """
 
-import time, os, logging, gzip, re
+import time, os, logging, gzip, re, inspect
 from utils import Plotter
 from utils.datatypes import Data, SequencingSample
 
@@ -58,7 +58,10 @@ class Logger:
         self.logger = logging.getLogger(self.name)
         self.logger.setLevel(logging.INFO)
         formatter = logging.Formatter("[%(levelname)s]: %(message)s")
-                   
+
+        #clear any preexisting handlers to avoid stream duplication
+        self.logger.handlers.clear()
+
         if self.verbose:
             console_handler = logging.StreamHandler()
             console_handler.setFormatter(formatter)
@@ -204,6 +207,9 @@ class Pipeline(Handler):
                 
                 msg = f'{sample.name} {tup[1]} dataset shape: {shape}'
                 self.logger.info(msg)
+                
+        msg = 65 * '-'
+        self.logger.info(msg)
     
         return data_descr
 
@@ -357,17 +363,15 @@ class FastqParser(Handler):
             self.logger.error(msg)
             raise ValueError(msg)
         return
-    
-    def _dna_to_pep(self, seq, force_at_frame=None):       
-        '''
-        In silico translation function that converts a DNA sequence into a peptide,
-        according to the genetic code as specified in constants.py
-               
-        ORF translation products lacking stop codons or containing
-        any ambiguous symbols will be marked with a '+' sign for downstream
-        analysis.
-        '''        
+
+    def _transform_check(self, sample, func):
+        if not sample.get_ndims() == 2:
+            raise ValueError(f'Sample {sample.name} holds arrays of unsupported dimensionality for {func} op. Expected: arrays of ndims=2, got: ndims={sample.get_ndims()}')
         
+        return
+    
+    def _dna_to_pep(self, seq, force_at_frame=None, stop_readthrough=False):       
+             
         def find_orf(seq):
             loc = re.search(self.utr5_seq, seq)
             if loc is not None:
@@ -376,11 +380,15 @@ class FastqParser(Handler):
                 return None
         
         def find_stop(peptide):
-            ind = peptide.find('_')
-            if ind == -1:
-                return peptide + '+'
+            if stop_readthrough:
+                return peptide
+            
             else:
-                return peptide[:ind]
+                ind = peptide.find('*')
+                if ind == -1:
+                    return peptide + '+'
+                else:
+                    return peptide[:ind]
 
         #figure out what to use as orf
         if force_at_frame is None:                
@@ -396,9 +404,12 @@ class FastqParser(Handler):
                 try:
                     pep += self.constants.codon_table[orf[i:i+3]]
                 except:
-                    pep += '+'
+                    if len(orf[i:i+3]) != 3:
+                        pep += '_'
+                    else:
+                        pep += '+'
 
-        return find_stop(pep)    
+        return find_stop(pep)
 
     def _L_summary(self, arr):
 
@@ -455,7 +466,7 @@ class FastqParser(Handler):
             self.logger.error(msg)
             raise AssertionError(msg)
         return
-            
+
     def _prepare_destinations(self, data):
         
         for sample in data:
@@ -468,18 +479,24 @@ class FastqParser(Handler):
     #The methods below are public data transformers.
     #All of them modify data in some way.
     #--------------------------------------------
-    def translate(self, force_at_frame=None):
+    def translate(self, force_at_frame=None, stop_readthrough=False):
         '''
     	For each sample in Data, perform in silico translation for DNA sequencing data. 
-    	The op will return data containing translated peptide lists. If used, 
-        should be called after fetching the data and (optionally) running
-        the FastqParser.revcom() op.
+    	The op will return data containing translated peptide lists. The op is 
+        intended for one-ORF-per-read NGS data, but not for long, multiple-ORFs-per-read
+        samples.
+             
+        This op should be called after fetching the data and (optionally) running
+        the FastqParser.revcom(), prior to any filtration routines.
+        
+        On top of running translation, this op will also transform the data 
+        to a reprensentation suitable for downstream ops.
         
         Parameters:
                 force_at_frame: if None, a regular ORF search will be performed. Regular ORF
                                 search entails looking for a Shine-Dalgarno sequence upstream 
                                 of an ATG codon (the exact 5’-UTR sequence signalling an 
-                                ORF should be specified in config.py).
+                                ORF is specified in config.py).
                                 								
                                 if not None, can take values of 0, 1 or 2. This will force-start
                                 the translation at the specified frame regardless of the 
@@ -490,10 +507,23 @@ class FastqParser(Handler):
                    force_at_frame=0  ----------> 
                     force_at_frame=1  ---------->
                      force_at_frame=2  ---------->
-					 
+                                 
+              stop_readthrough:	bool (True/False; default: False). if True, translation will
+                                continue even after encountering a stop codon until the 3'-end
+                                of the corresponding read. Note, that an "_" amino acid will
+                                be appended to the peptide sequence at the C-terminus if the 
+                                last encountred codon is missing 1 or 2 bases.
+                                
+                                if False, the op will return true ORF sequences. In this case,
+                                peptide sequences coming from ORFs which miss a stop codon will
+                                be labelled with a "+" amino acid at the C-terminus.
+                                
+                                Should be flagged True for ORFs with no stop codon inside the read.
+				 
         Returns:
                 Data object containing peptide sequence information
         '''
+        
         if force_at_frame is not None:
             if force_at_frame not in (0, 1, 2):
                 msg = f'<translate> routine expected to receive param "force_at_frame" as any of (0, 1, 2); received: {force_at_frame}'
@@ -503,12 +533,23 @@ class FastqParser(Handler):
             if not hasattr(self, 'utr5_seq'):
                 msg = "5' UTR sequence is not set for the <translation> routine. Can not perform ORF search. Aborting. . ."
                 self.logger.error(msg)
-                raise ValueError(msg)                
+                raise ValueError(msg)   
                 
+        if type(stop_readthrough) != bool:
+            msg = f'<translate> routine expected to receive param "stop_readthrough" as type=bool; received: {type(stop_readthrough)}'
+            self.logger.error(msg)
+            raise ValueError(msg)   
+                                
         def translate_dna(data):
             for sample in data:
                 
-                sample.P = np.array([self._dna_to_pep(x, force_at_frame=force_at_frame) for x in sample.D])
+                sample.P = np.array([self._dna_to_pep(
+                                                      x, 
+                                                      force_at_frame=force_at_frame,
+                                                      stop_readthrough=stop_readthrough
+                                                     ) 
+                                     
+                                     for x in sample.D])
                 
                 #this transformation is not declared publicly; may be it should
                 sample.transform()
@@ -623,16 +664,9 @@ class FastqParser(Handler):
         def length_filter(data):
             for sample in data:
                 
-                if where == 'pep':
-                    arr = sample.P   
-                elif where == 'dna':
-                    arr = sample.D       
-                    
-                if arr.ndim != 2:
-                    msg = f'Sample {sample.name} contains a {where} array with {arr.ndim} dimensions; required for <length_filter> routine: 2; operation ignored. . .'
-                    self.logger.warning(msg)
-                    continue
-                
+                self._transform_check(sample, inspect.stack()[0][3])
+                arr = sample[where]  
+   
                 #L is a length summary array
                 L = self._L_summary(arr)
                 
@@ -705,16 +739,9 @@ class FastqParser(Handler):
         def constant_region_filter(data):        
             from utils.misc import hamming_distance
             for sample in data:
-                if where == 'pep':
-                    arr = sample.P
-                    
-                elif where == 'dna':
-                    arr = sample.D
- 
-                if arr.ndim != 2:
-                    msg = f'Sample {sample.name} contains a {where} array with {arr.ndim} dimensions; required for <constant_region_filter> routine: 2; operation ignored. . .'
-                    self.logger.warning(msg)
-                    continue
+                
+                self._transform_check(sample, inspect.stack()[0][3])
+                arr = sample[where]
                 
                 #iterativelt fill in the indexing array
                 for i, template in enumerate(design):
@@ -801,16 +828,8 @@ class FastqParser(Handler):
             
         def variable_region_filter(data):                     
             for sample in data:
-                if where == 'pep':
-                    arr = sample.P
-
-                elif where == 'dna':
-                    arr = sample.D   
-
-                if arr.ndim != 2:
-                    msg = f'Sample {sample.name} contains a {where} array with {arr.ndim} dimensions; required for <variable_region_filter> routine: 2; operation ignored. . .'
-                    self.logger.warning(msg)
-                    continue
+                self._transform_check(sample, inspect.stack()[0][3])
+                arr = sample[where]
 
                 #first things first: temporarily expand the internal
                 #state array by one dimension; will collapse back at the end
@@ -865,24 +884,20 @@ class FastqParser(Handler):
                 tokens
         '''
         self._where_check(where)  
+        
+        #fetch the relevant monomer sets
+        if where == 'pep':
+            allowed_monomers = self.constants.aas
+            
+        elif where == 'dna':
+            allowed_monomers = self.constants.bases
+            
         def filter_ambiguous(data):      
             for sample in data:
                 
-                #determine which ndarray to focus on
-                #fetch the relevant monomer sets
-                if where == 'pep':
-                    allowed_monomers = self.constants.aas
-                    arr = sample.P
-                    
-                elif where == 'dna':
-                    allowed_monomers = self.constants.bases
-                    arr = sample.D   
-
-                if arr.ndim != 2:
-                    msg = f'Sample {sample.name} contains a {where} array with {arr.ndim} dimensions; required for <filter_ambiguous> routine: 2; operation ignored. . .'
-                    self.logger.warning(msg)
-                    continue
-
+                self._transform_check(sample, inspect.stack()[0][3])
+                arr = sample[where]
+                
                 #perform the check; a little annoying because pads are also technically not allowed
                 ind = np.in1d(arr, allowed_monomers).reshape(arr.shape)
                 ind = np.sum(ind, axis=1) == self._L_summary(arr)
@@ -943,14 +958,10 @@ class FastqParser(Handler):
 
         self._loc_check(loc, self.D_design)
         def q_score_filter(data):
+            
             for sample in data:
-                
-                arr = sample.Q
-                if arr.ndim != 2:
-                    msg = f'Sample {sample.name} contains a Q score array with {arr.ndim} dimensions; required for <Q_score_filter> routine: 2; operation ignored. . .'
-                    self.logger.warning(msg)
-                    continue
-                          
+                self._transform_check(sample, inspect.stack()[0][3])
+                arr = sample.Q                          
                 for i, template in enumerate(self.D_design):
                     
                     row_mask = sample._internal_state[:,i]
@@ -969,7 +980,7 @@ class FastqParser(Handler):
     def fetch_at(self, where=None, loc=None):
         '''
         For each sample in Data, for a dataset specified by 'where', fetch the regions
-        specified by 'loc'. Other regions are discarded. 
+        specified by 'loc' and discard other sequence regions.
         
         Collapses sample's internal state.
         See documentation on Data objects for more information.
@@ -994,16 +1005,9 @@ class FastqParser(Handler):
         
         def fetch_region(data):
             for sample in data:
-                if where == 'pep':
-                    arr = sample.P
-                    
-                elif where == 'dna':
-                    arr = sample.D
                 
-                if arr.ndim != 2:
-                    msg = f'Sample {sample.name} contains a {where} array with {arr.ndim} dimensions; required for <fetch_variable_region> routine: 2; operation ignored. . .'
-                    self.logger.warning(msg)
-                    continue
+                self._transform_check(sample, inspect.stack()[0][3])
+                arr = sample[where]
                 
                 if not sample._is_collapsed:
                     msg = f"<fetch_region> routine will collapse sample {sample.name}'s internal state"
@@ -1020,12 +1024,11 @@ class FastqParser(Handler):
                     row_mask = sample._internal_state[:,i]
                     
                     result[row_mask, :len(col_mask)] = arr[row_mask][:,col_mask]
-                
-                if where == 'pep':
-                    sample.P = result
+                    sample[where] = result
                     
-                if where == 'dna':
-                    sample.D = result
+                #reindex the library design accordingly so that the downstream ops
+                #can still be called with originally defined loc pointers
+                design.truncate_and_reindex(loc)
                     
             return data
         return fetch_region
@@ -1076,16 +1079,8 @@ class FastqParser(Handler):
             self._prepare_destinations(data)        
             for sample in data:
                 
-                if where == 'pep':
-                    arr = sample.P
-                    
-                elif where == 'dna':
-                    arr = sample.D
-                
-                if arr.ndim != 2:
-                    msg = f'Sample {sample.name} contains a {where} array with {arr.ndim} dimensions; required for <length_summary> routine: 2; operation ignored. . .'
-                    self.logger.warning(msg)
-                    continue
+                self._transform_check(sample, inspect.stack()[0][3])
+                arr = sample[where]
                 
                 L = self._L_summary(arr)            
                 L, counts = np.unique(L, return_counts=True)
@@ -1118,6 +1113,13 @@ class FastqParser(Handler):
                 Data object (no transformation)
         '''
         self._where_check(where)
+        
+        if where == 'pep':
+            tokens = self.constants.aas
+                    
+        elif where == 'dna':               
+            tokens = self.constants.bases
+        
         from utils.misc import shannon_entropy, get_freqs
         def _seq_conservation(freq):
             '''
@@ -1135,19 +1137,9 @@ class FastqParser(Handler):
 
             self._prepare_destinations(data)
             for sample in data:
-                
-                if where == 'pep':
-                    arr = sample.P
-                    tokens = self.constants.aas
-                    
-                elif where == 'dna':
-                    arr = sample.D                  
-                    tokens = self.constants.bases
-                
-                if arr.ndim != 2:
-                    msg = f'Sample {sample.name} contains a {where} array with {arr.ndim} dimensions; required for <library_convergence_summary> routine: 2; operation ignored. . .'
-                    self.logger.warning(msg)
-                    continue
+
+                self._transform_check(sample, inspect.stack()[0][3])                
+                arr = sample[where]
                 
                 shannon, counts = shannon_entropy(arr, norm=True)
                 freq = get_freqs(arr, tokens)
@@ -1167,18 +1159,24 @@ class FastqParser(Handler):
 
     def freq_summary(self, where=None, loc=None, save_txt=False):
         '''
-        Perform basic library convergence analysis on a token level. For each sample in Data, 
+        Perform basic library convergence analysis at a token level. For each sample in Data, 
         computes the frequency of each token in the dataset. Plots the results in the parser 
         output folder as specified by config.py. Optionally, the data can also be written to
         a txt file.
-        
-        Collapses sample's internal state (see docuemntation for Data objects)
-        	
+
         Parameters:
                    where: 'dna' or 'pep' to specify which dataset the op 
                           should work on.
 						  
-                     loc: a list of ints to specify regions to be analyzed
+                     loc: a list of ints to specify regions to be analyzed;
+                          in this case, the op will collapse sample's internal
+                          state (see explanation for Data objects)
+                          
+                          OR
+                          
+                          'all': to get the same statistics over the entire sequence;
+                                 in this case, the op will NOT collapse sample's 
+                                 internal state
 
                 save_txt: if True, the data will be written to a txt file saved
                           in the same folder as the .png and .svg plots						 
@@ -1189,55 +1187,59 @@ class FastqParser(Handler):
         self._where_check(where)
         if where == 'pep':
             design = self.P_design
+            tokens = self.constants.aas
             
         elif where == 'dna':
             design = self.D_design        
+            tokens = self.constants.bases
             
-        self._loc_check(loc, design)
+        if loc != 'all':
+            self._loc_check(loc, design)
+            
         from utils.misc import get_freqs
         
         def frequency_summary(data):
             self._prepare_destinations(data)
             for sample in data:
-                if where == 'pep':
-                    arr = sample.P
-                    tokens = self.constants.aas
-                    
-                elif where == 'dna':
-                    arr = sample.D
-                    tokens = self.constants.bases
-                    
-                if arr.ndim != 2:
-                    msg = f'Sample {sample.name} contains a {where} array with {arr.ndim} dimensions; required for <frequency_summary> routine: 2; operation ignored. . .'
-                    self.logger.warning(msg)
-                    continue
-
-                #array internal state has to be collapsed for this calculation
-                if not sample._is_collapsed:
-                    msg = f"<frequency_summary> routine will collapse sample {sample.name}'s internal state"
-                    self.logger.info(msg)
-                    sample._collapse_internal_state()
                 
-                #initialize the frequency array: 3D array to be reduced along axis 0 at the end
-                maxlen = self._find_max_len(design, loc)
-                freq = np.zeros((len(design), len(tokens), maxlen), dtype=np.float32)
+                self._transform_check(sample, inspect.stack()[0][3])
+                arr = sample[where]
                 
-                for i,template in enumerate(design):                    
+                if loc == 'all':
+                    freq = get_freqs(arr, tokens)
                     
-                    row_mask = sample._internal_state[:,i]
-                    col_mask = template(loc, return_mask=True)
-
-                    #calculated weighed contributions of each design
-                    #to the overall frequency array
-                    norm = np.divide(np.sum(row_mask), arr.shape[0])
-                    freq[i,:,:len(col_mask)] = norm * np.nan_to_num(get_freqs(arr[row_mask][:,col_mask], tokens))
-
-                #reduce back to a 2D array and plot/save
-                freq = np.sum(freq, axis=0)
+                else:
+                    #array internal state has to be collapsed for this calculation
+                    if not sample._is_collapsed:
+                        msg = f"<frequency_summary> routine will collapse sample {sample.name}'s internal state"
+                        self.logger.info(msg)
+                        sample._collapse_internal_state()
+                    
+                    #initialize the frequency array: 3D array to be reduced along axis 0 at the end
+                    maxlen = self._find_max_len(design, loc)
+                    freq = np.zeros((len(design), len(tokens), maxlen), dtype=np.float32)
+                    
+                    for i,template in enumerate(design):                    
+                        
+                        row_mask = sample._internal_state[:,i]
+                        col_mask = template(loc, return_mask=True)
+    
+                        #calculated weighed contributions of each design
+                        #to the overall frequency array
+                        norm = np.divide(np.sum(row_mask), arr.shape[0])
+                        freq[i,:,:len(col_mask)] = norm * np.nan_to_num(get_freqs(arr[row_mask][:,col_mask], tokens))
+    
+                    #reduce back to a 2D array and plot/save
+                    freq = np.sum(freq, axis=0)
+                
+                if loc == 'all':
+                    nloc = 'overall'
+                    fname =f'{sample.name}_{where}_overall_tokenwise_frequency'
+                else:
+                    nloc =  ', '.join(str(x + 1) for x in loc)
+                    fname = f'{sample.name}_{where}_reg{nloc}_tokenwise_frequency'
                 
                 destination = os.path.join(self.dirs.parser_out, sample.name)
-                nloc =  ', '.join(str(x + 1) for x in loc)
-                fname = f'{sample.name}_{where}_reg{nloc}_tokenwise_frequency'
                 basename = os.path.join(destination, fname)
                 Plotter.SequencingData.tokenwise_frequency(freq, tokens, where, nloc, basename)  
 
@@ -1252,56 +1254,66 @@ class FastqParser(Handler):
 
     def q_summary(self, loc=None, save_txt=False):
         '''
-        For each sample in Data, compute basic statistics of Q scores. 
+        For each sample in Data, compute some basic Q score statistics.
     	For each position in regions specified by 'loc', computes the mean and standard deviation
         of Q scores. Plots the results in the parser output folder as specified by config.py.
         Optionally, the data can also be written to a txt file.
-        	
-        Collapses sample's internal state (see explanation for Data objects)
-    	
+        	    	
         Parameters:					  
-                     loc: a list of ints to specify regions to be analyzed
-
+                     loc: a list of ints to specify regions to be analyzed;
+                          in this case, the op will collapse sample's internal
+                          state (see explanation for Data objects)
+                          
+                          OR
+                          
+                          'all': to get the same statistics over the entire Q 
+                                 score arrays. in this case, the op will NOT 
+                                 collapse sample's internal state
+                          
                 save_txt: if True, the data will be written to a txt file saved
                           in the same folder as the .png and .svg plots						 
                           						  							  
         Returns:
                 Data object (no transformation)	
         '''
-        self._loc_check(loc, self.D_design)
+        
+        if loc != 'all':
+            self._loc_check(loc, self.D_design)
+            
         def q_score_summary(data):
             
             self._prepare_destinations(data)
             for sample in data:
-                arr = sample.Q
+                self._transform_check(sample, inspect.stack()[0][3])
                 
-                if arr.ndim != 2:
-                    msg = f'Sample {sample.name} contains a Q array with {arr.ndim} dimensions; required for <q_score_summary> routine: 2; operation ignored. . .'
-                    self.logger.warning(msg)
-                    continue
-                
-                if not sample._is_collapsed:
-                    msg = f"<q_score_summary> routine will collapse sample {sample.name}'s internal state"
-                    self.logger.info(msg)
-                    sample._collapse_internal_state()
-                                
-                maxlen = self._find_max_len(self.D_design, loc)
-                #iterate over templates and append all of the relevant arr views to this array
-                #relevant view: masked (row/columnwise) arr
-                relevant_arr = []
-                
-                for i,template in enumerate(self.D_design):
+                if loc == 'all':
+                    relevant_arr = sample.Q.astype(np.float32)
                     
-                    row_mask = sample._internal_state[:,i]
-                    col_mask = template(loc, return_mask=True)                
+                else:
+                    arr = sample.Q
+                    if not sample._is_collapsed:
+                        msg = f"<q_score_summary> routine will collapse sample {sample.name}'s internal state"
+                        self.logger.info(msg)
+                        sample._collapse_internal_state()
+                                    
+                    maxlen = self._find_max_len(self.D_design, loc)
+                    #iterate over templates and append all of the relevant arr views to this array
+                    #relevant view: masked (row/columnwise) arr
+                    relevant_arr = []
                     
-                    arr_view = np.zeros((np.sum(row_mask), maxlen))
-                    arr_view[:,:len(col_mask)] = arr[row_mask][:,col_mask]
-                    relevant_arr.append(arr_view)
-
-                #assemble into a single array and mask out pads (0) 
-                #as nans for nanmean/nanstd statistics
-                relevant_arr = np.vstack(relevant_arr)
+                    for i,template in enumerate(self.D_design):
+                        
+                        row_mask = sample._internal_state[:,i]
+                        col_mask = template(loc, return_mask=True)                
+                        
+                        arr_view = np.zeros((np.sum(row_mask), maxlen), dtype=np.float32)
+                        arr_view[:,:len(col_mask)] = arr[row_mask][:,col_mask]
+                        relevant_arr.append(arr_view)
+    
+                    #assemble into a single array
+                    relevant_arr = np.vstack(relevant_arr)
+                    
+                #mask out pads (0) as nans for nanmean/nanstd statistics
                 relevant_arr[relevant_arr == 0] = np.nan
                 
                 #get the stats; plot
@@ -1309,8 +1321,13 @@ class FastqParser(Handler):
                 q_std = np.nanstd(relevant_arr, axis=0)
 
                 destination = os.path.join(self.dirs.parser_out, sample.name)
-                nloc =  ', '.join(str(x + 1) for x in loc)
-                fname = f'{sample.name}_reg{nloc}_q_score_summary'
+                if loc == 'all':
+                    nloc = 'overall'
+                    fname = f'{sample.name}_overall_q_score_summary'
+                else:
+                    nloc =  ', '.join(str(x + 1) for x in loc)
+                    fname = f'{sample.name}_reg{nloc}_q_score_summary'
+                    
                 basename = os.path.join(destination, fname)
                 Plotter.SequencingData.Q_score_summary(q_mean, q_std, nloc, basename)  
 
@@ -1382,16 +1399,9 @@ class FastqParser(Handler):
         def full_count_summary(data):
             self._prepare_destinations(data)
             for sample in data:
-                if where == 'pep':
-                    arr = sample.P
-                  
-                elif where == 'dna':
-                    arr = sample.D
-
-                if arr.ndim != 2:
-                    msg = f'Sample {sample.name} contains a {where} array with {arr.ndim} dimensions; required for <frequency_summary> routine: 2; operation ignored. . .'
-                    self.logger.warning(msg)
-                    continue                
+                
+                self._transform_check(sample, inspect.stack()[0][3])
+                arr = sample[where]            
                 
                 #count entries in the array
                 unique, og_ind, counts = np.unique(arr, axis=0, 
@@ -1413,6 +1423,52 @@ class FastqParser(Handler):
             return data
         return full_count_summary
     
+    def template_summary(self, where=None):
+        '''
+        For each sample in Data, compute the number of matches between the dataset 
+        specified by 'where' and the corresponding library templates. The results 
+        are written to a file in the parser output folder as specified by config.py.
+        
+        In other words, summarize where dataset sequences come from (from which
+        libraries). The op could also be called "_internal_state_summary"
+        
+        Parameters:					  
+                   where: 'dna' or 'pep' to specify which dataset the op 
+                          should work on                        						  							  
+        Returns:
+                Data object (no transformation)
+        '''        
+        
+        self._where_check(where)
+        if where == 'pep':
+            design = self.P_design
+        
+        elif where == 'dna':
+            design = self.D_design
+            
+        def template_breakdown(data):
+            self._prepare_destinations(data)
+       
+            #summarize straight into a pandas dataframe
+            sample_names = [sample.name for sample in data]
+            templates = [template.lib_seq for template in design]
+        
+            #all this op is: axis=0-wide sum of the internal states
+            import pandas as pd
+            df = pd.DataFrame(index=sample_names, columns=templates)
+            
+            for sample in data:
+                self._transform_check(sample, inspect.stack()[0][3])
+                df.loc[sample.name] = np.sum(sample._internal_state, axis=0)
+                
+            destination = os.path.join(self.dirs.parser_out, sample.name)
+            fname = f'{sample.name}_{where}_template_breakdown'
+            path = os.path.join(destination, fname)            
+            df.to_csv(path + '.csv', sep=',')
+    
+            return data
+        return template_breakdown
+        
     #--------------------------------------------
     #Below are IO readers/writers
     #--------------------------------------------    
@@ -1569,19 +1625,11 @@ class FastqParser(Handler):
         def save_data(data):
                     
             self._prepare_destinations(data)
-            
             for sample in data:
-                if where == 'pep':
-                    arr = sample.P
-                    
-                elif where == 'dna':
-                    arr = sample.D    
                 
-                if arr.ndim != 2:
-                    msg = f'Sample {sample.name} contains a {where} array with {arr.ndim} dimensions; required for <save_data> routine: 2; operation ignored. . .'
-                    self.logger.warning(msg)
-                    continue
-                
+                self._transform_check(sample, inspect.stack()[0][3])
+                arr = sample[where]  
+
                 destination = os.path.join(self.dirs.parser_out, sample.name)
                 fname = f'{sample.name}_{where}'
                 path = os.path.join(destination, fname)

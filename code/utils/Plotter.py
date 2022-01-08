@@ -17,7 +17,7 @@ class SequencingData:
     Just a container for FastqParser-related plotters
     '''
     def L_distribution(X, Y, where, basename):
-            
+    
         fig = plt.figure(figsize=(18, 6), dpi=300)
         ax = fig.add_subplot(111)
         plt.bar(X, Y, color='#0091b5')
@@ -102,16 +102,15 @@ class SequencingData:
     def tokenwise_frequency(freq, yticknames, where, loc, basename):
     
         if where == 'dna':
-            figsize = (20, 4)
             ylabel = 'Base'
-            
+
         if where == 'pep':
-            figsize = (10, 10.5)
             ylabel = 'Amino acid'
-    
+            
+        figsize = (1 + freq.shape[1] / 2, freq.shape[0] / 2)
         fig, ax = plt.subplots(1, 1, figsize=figsize, dpi=300)
     
-        norm = mpl.colors.Normalize(vmin=0, vmax=1.05*np.max(freq))
+        norm = mpl.colors.Normalize(vmin=0, vmax=np.max(freq))
         c = ax.pcolormesh(freq, cmap=plt.cm.Blues, norm=norm, edgecolors='w', linewidths=4)
         cbar = fig.colorbar(c, ax=ax)
     
@@ -138,7 +137,7 @@ class SequencingData:
         plt.close()    
 
     def Q_score_summary(avg, std, loc, basename):
-                        
+         
         fig = plt.figure(figsize=(18, 6), dpi=300)
         ax = fig.add_subplot(111)
         plt.plot(avg, lw=4, c='#3b61b1')

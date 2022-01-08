@@ -32,8 +32,10 @@ if __name__ == '__main__':
                 par.fetch_gz_from_dir(), 
                 par.translate(),         
                 par.filt_ambiguous(where='pep'),
-                par.count_summary(where='pep', top_n=100, fmt='csv'),
-                par.count_summary(where='pep', top_n=100, fmt='fasta')
+                par.count_summary(where='pep', top_n=500, fmt='csv'),
+                par.count_summary(where='pep', top_n=500, fmt='fasta'),
+                par.count_summary(where='dna', top_n=500, fmt='csv'),
+                par.count_summary(where='dna', top_n=500, fmt='fasta')
              ])
     
     #this will execute the pipeline

@@ -3,7 +3,6 @@
 Created on Sat Aug 8 20:28:10 2021
 @author: Alex Vinogradov
 """
-#to show: enquing process with no run
 
 if __name__ == '__main__':
     
@@ -31,7 +30,7 @@ if __name__ == '__main__':
     #but the validity of specifications will be asserted.
     pip.enque([
                 par.fetch_gz_from_dir(), 
-                par.translate(),         
+                par.translate(stop_readthrough=False),         
                 par.len_summary(where='dna', save_txt=True),
                 par.len_summary(where='pep', save_txt=True),
                 par.len_filter(where='pep'),
@@ -39,14 +38,15 @@ if __name__ == '__main__':
                 par.convergence_summary(where='pep'),            
                 par.cr_filter(where='pep', loc=[1], tol=3),
                 par.vr_filter(where='pep', loc=[0], sets=[1, 2, 3]),
-                par.q_summary(loc=[0, 1, 2], save_txt=True),
+                par.q_summary(loc='all', save_txt=True),
                 par.filt_ambiguous(where='pep'),
                 par.q_score_filt(minQ=20, loc=[1]),
+                par.fetch_at(where='pep', loc=[0]),
                 par.freq_summary(where='pep', loc=[0], save_txt=True),
                 par.freq_summary(where='dna', loc=[1], save_txt=True),
-                par.fetch_at(where='pep', loc=[0]),
-                par.count_summary(where='pep', top_n=100, fmt='csv'),
-                par.count_summary(where='pep', top_n=100, fmt='fasta'),
+                par.count_summary(where='pep', top_n=500, fmt='csv'),
+                par.count_summary(where='pep', top_n=500, fmt='fasta'),
+                par.template_summary(where='pep'),
                 par.unpad(),
                 par.save(where='pep', fmt='npy'),
              ])

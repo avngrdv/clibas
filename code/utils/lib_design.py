@@ -114,23 +114,59 @@ class Template:
         seq = ''.join(self.lib_seq)    
         return f'<Template container for {seq}  lib_type={self.lib_type}>'    
 
+    def _fancy_index(self, arr, loc):
+        out = []
+        for x in loc:
+            out.extend(arr[x])
+            
+        return out
+
     def __call__(self, loc, return_mask=False):
         '''
         Run fancy indexing to get the sequence of regions at a specified location 'loc'
         '''
-        def fancy_index(arr, loc):
-            out = []
-            for x in loc:
-                out.extend(arr[x])
-                
-            return out
+        
+        if not np.all(np.in1d(loc, self.loc)):
+            raise ValueError('Library design: a call to non-existent region was made. . .')
         
         if return_mask:
             arr = self.mask
         else:
             arr = self.region
         
-        return fancy_index(arr, loc)
+        return self._fancy_index(arr, loc)
+
+    def truncate_and_reindex(self, loc):
+        '''
+        Assemble a new template that keep only the regions
+        specified by loc. Done in place. Note that the loc
+        indexes will be kept as in the original.
+        '''
+        
+        def remask():
+            mask = list()
+            ind = 0
+            for reg in self.region:
+                current = list()
+                for x in reg:    
+                    current.append(ind)
+                    ind += 1
+                mask.append(current)
+            
+            self.mask = mask
+            self.L = ind + 1
+            return
+        
+        self.is_vr = self.is_vr[loc]
+        self.loc = np.array(loc)
+        
+        reg = list()
+        for ind in self.loc:
+            reg.append(self.region[ind])
+
+        self.region = reg
+        remask()
+        return
 
 class LibraryDesign:
     '''
@@ -244,4 +280,12 @@ class LibraryDesign:
         
         return
         
-       
+    def truncate_and_reindex(self, loc):
+        for template in self.templates:
+            template.truncate_and_reindex(loc)
+            
+        return
+            
+        
+        
+        

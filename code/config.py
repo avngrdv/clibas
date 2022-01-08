@@ -5,11 +5,11 @@ experiment = 'unnamed_experiment'
 
 class constants:
     '''
-    Underscore symbol (_) is reserved for stop codons;
-    Plus symbol (+) is an internally reserved token;
-    Numerals (1234567890) are internally reserved for
-    library design specification. Other symbols can
-    be used for encoding.
+    Star symbol (*) is reserved for stop codons.
+    Plus and underscore symbols (+ and _) are internally reserved tokens.
+    Numerals (1234567890) are internally reserved for library design specification. 
+    These symbols (123456790+_) should not be used to encode amino acids. 
+    Other symbols are OK.
     
     Although the class holds multiple attributes, only
     the codon table should be edited. Everything else
@@ -30,8 +30,8 @@ class constants:
                     'GGA':'G', 'GGC':'G', 'GGG':'G', 'GGT':'G',
                     'TCA':'S', 'TCC':'S', 'TCG':'S', 'TCT':'S',
                     'TTC':'F', 'TTT':'F', 'TTA':'L', 'TTG':'L',
-                    'TAC':'Y', 'TAT':'Y', 'TAA':'_', 'TAG':'_',
-                    'TGC':'C', 'TGT':'C', 'TGA':'_', 'TGG':'W',
+                    'TAC':'Y', 'TAT':'Y', 'TAA':'*', 'TAG':'*',
+                    'TGC':'C', 'TGT':'C', 'TGA':'*', 'TGG':'W',
                    }
 
 
@@ -39,7 +39,7 @@ class constants:
     complement_table = str.maketrans('ACTGN', 'TGACN')
 
     global _reserved_aa_names
-    _reserved_aa_names = ('_', '+', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0')    
+    _reserved_aa_names = ('_', '+', '*', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0')    
     
     aas = tuple(sorted(set(x for x in codon_table.values() if x not in _reserved_aa_names)))
     codons = tuple(sorted(set(x for x in codon_table.keys())))
@@ -50,7 +50,7 @@ class ParserConfig:
     #a RE pattern that has to match in order to initiate the orf
     #is only used when force_translation == False
     utr5_seq = 'AGGAGAT......ATG'
-    
+        
     #DNA library design
     D_design = LibraryDesign(
         

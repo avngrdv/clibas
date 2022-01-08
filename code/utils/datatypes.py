@@ -28,14 +28,21 @@ class SequencingSample:
         self.P = np.array(self.P)    
         
         L = []
+        dim = []
         for arr in (self.D, self.Q, self.P):
             try:
                 L.append(arr.shape[0])
             except:
                 pass
-        
+            
+            if arr.ndim:
+                dim.append(arr.ndim)
+                
         if not len(set(L)) == 1:
             raise ValueError('Sequencing sample datasets contain data of different length!')
+
+        if not len(set(dim)) == 1:
+            raise ValueError('Sequencing sample datasets contain data of different dimensionality!')
 
         self._internal_state = np.array(None)
         self._is_collapsed = False
@@ -44,7 +51,7 @@ class SequencingSample:
     #if a sample is iterated over, 
     #it will only expose D, Q and P attributes
     def __iter__(self):
-        for tup in ((self.D, 'DNA'), (self.Q, 'Q scores'), (self.P, 'P')):
+        for tup in ((self.D, 'DNA'), (self.Q, 'Q score'), (self.P, 'Peptide')):
             yield tup
 
     def __len__(self):
@@ -87,6 +94,36 @@ class SequencingSample:
             
         return
 
+    def __getitem__(self, item):
+        if item == 'pep':
+            return self.P
+        
+        elif item == 'dna':
+            return self.D
+        
+        elif item == 'Q':
+            return self.Q
+
+        else:
+            raise ValueError(f'{item} indexing not understood by SequencingSample {self.name}')
+        
+        return
+    
+    def __setitem__(self, key, value):
+        if key == 'pep':
+            self.P = value
+        
+        elif key == 'dna':
+            self.D = value
+        
+        elif key == 'Q':
+            self.Q = value
+
+        else:
+            raise ValueError(f'{key} indexing not understood by SequencingSample {self.name}')
+        
+        return    
+        
     def _collapse_internal_state(self):
         '''
         the internal state array may need to be collapsed sometimes.
@@ -189,6 +226,23 @@ class SequencingSample:
         self.transform_Q(pad=pad)
         self.transform_P(pad=pad)
         return
+
+    def get_ndims(self):
+        '''
+        Return the dimensionality of (P, Q, D) datasets
+        '''
+        dim = []
+        for arr in (self.D, self.Q, self.P):
+            if arr.ndim:
+                dim.append(arr.ndim)
+        
+        if not len(dim):
+            return 0
+        
+        if not len(set(dim)) == 1:
+            raise ValueError('Sequencing sample datasets contain data of different dimensionality!')
+        
+        return dim[0]
 
     def drop(self, where=None):
         '''
