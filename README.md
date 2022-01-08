@@ -3,7 +3,7 @@
 
 FastqProcessor is python package to analyze NGS sequencing data. The tool is specifically tailored toward analysis of screening outcomes for the selections/screens of genetically encoded peptide/protein libraries (i.e. mRNA , phage or yeast display libraries).\
 \
-The primary purpose of FastqProcessor is library design matching. Given a particular library design for a genetically encoded peptide/protein library, parse and filter .fastq files to remove noise, low confidence reads, sequences that are too short, too long and much more.\
+The primary purpose of FastqProcessor is to match NGS reads to library designs: given a particular library design for a genetically encoded peptide/protein library, parse and filter .fastq files to remove noise, low confidence reads, sequences that are too short, too long and so on.\
 \
 Concomitantly, the tool can collect basic statistics about the data, count sequences, etc.
 ### Motivation
@@ -20,6 +20,15 @@ The easiest way to get these up and running is downloading and installing [Anaco
 
 # Usage
 The package provides the tools for analysis. Specific pipelines need to be built for individual applications as explained below. code/config.py and code/main.py also provide examples. _The code is released under the GNU General Public License v3.0 without any explicit or implied warranty. Use it at your own discretion._
+
+# Changelog 
+## (Jan 08, 2022)
+1. Reworked how translation is done. Now, stop codonds should be designed as "\*" in the translation table, consistently with the widely accepted nomenclature. Added a new keyword for *translate* op: *stop_readthrough*. Normally, translation will terminate upon encountering a stop codon in the ORF. if *stop_readthrough=True* is specified, translation will keep going even after encountering a stop codon. The resulting peptides will have "\*" as a part of their sequence. Another change: if an ORF runs all the way to the 3'-end of the DNA read, translation may encounter an "incomplete codon", i.e., 1 or 2 bases instead of the usual triplet. All such incomplete codons encode a specially reversed "\_" amino acid, which needs to be specified as a part of library design, when parsing the libraries with no stop codon inside the ORF.
+2. Added a new op: *template_summary*. Details are below.
+3. Fixed the *fetch_at* op. Now, other filtration/summary routines can be called after it (*fetch_at* used to break everything downstream of it).
+4. Fixed *q_summary* and *freq_summary* ops, or rather added new functionality. To avoid internal state collapse for the samples, the ops can be called with *loc='all'* keyword, which to me makes more sense than the original implementation; the original is also kept, and can still be used.
+5. Fixed logging, which used to produce a new logging stream upon every rerun of the script.
+6. Simplified the code.
 
 # Documentation
 ## Overall workflow
@@ -83,7 +92,7 @@ Note that variable positions can encode a single amino acid (amino acids 2 and 3
 During analysis, data is stored as a Data object instance. Data is just a container for individual samples, which are stored as SequencingSample objects. Any number of DNA sequences can be a sample in principle, but in practice, most of the time one sample = a single .fastq file. SequencingSample objects have four public attributes: 
 
 	SequencingSample.name: sample name (as a str)
-    SequencingSample.D: a list of DNA sequences (can be set as None)
+    	SequencingSample.D: a list of DNA sequences (can be set as None)
 	SequencingSample.Q: a list of Q score sequences (can be set as None)
 	SequencingSample.P: a list of peptide sequences (can be set as None)
 	
@@ -92,48 +101,51 @@ These lists are stored as numpy arrays: 1D prior to calling FastqParser.transfor
 The number of entries in each array is kept equal throughout the process unless one or more of the attributes are set to None. Although any given filtration routine [for example, FastqParser.q_score_filt()] acts on a single array [SequencingSample.Q in this example], the entries for all three arrays are discarded/kept as a result.\
 \
 Depending on how many and what kinds of templates are specified in LibraryDesign, any given entry in SequencingSample may in principle be compatible with several templates simultaneously. Figuring out what entry should be assigned to what kind of template is one of the primary objectives of the parser. Initially, [i.e. right after calling FastqParser.translate()] the parser deems every sequence to be compatible with every specified template. As filtration goes on, op by op, this compatibility is refined. I call the state of the assignment for a particular SequencingSample _sample’s internal state_. Some ops [for instance, FastqParser.fetch_at()] need to know exactly which template should be associated with which entry; if they find an entry that is compatible with multiple possible templates, they will “collapse” sample’s internal state, by choosing one compatible template and assigning everything else as incompatible. Refer to the list of ops below for details on which ops can collapse sample’s internal state. In general, these should be called after filtration ops.
+
 ## Ops
 
 ### FastqParser.fetch_fastq_from_dir()
     
-    Fetch all .fastq files from the sequencing_data directory (as specified in config.py).
-    Should be called as the first op in the workflow.
-    
-        Parameters:
-                None
-    
-        Returns:
-                Fetched Fastq data as an instance of Data
+        Fetch all .fastq files from the sequencing_data directory 
+        (as specified in config.py). Should be called as the first op in the workflow.
+        
+            Parameters:
+                    None
+        
+            Returns:
+                    Fetched Fastq data as an instance of Data
 
 ### FastqParser.fetch_gz_from_dir()
     
-    Fetch all .fastq.gz files from the sequencing_data directory (as specified in config.py)
-    Should be called as the first op in the workflow.
-    
-        Parameters:
-                None
-    
-        Returns:
-                Fetched Fastq data as an instance of Data
+        Fetch all .fastq.gz files from the sequencing_data directory 
+        (as specified in config.py). Should be called as the first op in the workflow.
+        
+            Parameters:
+                    None
+        
+            Returns:
+                    Fetched Fastq data as an instance of Data
 
 ### FastqParser.revcom()
     
-    For each sample in Data, get reverse complement of DNA sequences and 
-    reverse sequences of the corresponding Q score. If used, should enqueued 
-    right after the fetching op, and before any downstream ops.
-    
+        For each sample in Data, get reverse complement of DNA sequences and 
+        reverse sequences of the corresponding Q score. If used, should enqueued 
+        right after the fetching op, and before any downstream ops.
+        
         Parameters:
                 None
     
         Returns:
-                Transformed Data object holding reverse-complemented DNA and reversed Q score information
+                Transformed Data object holding reverse-complemented DNA
+                and reversed Q score information
 
 ### FastqParser.transform()
     
-    Deprecated in favor of using FastqParser.translate(). If used, should be called after 
-    fetching the data and (optionally) running the FastqParser.revcom() op. Transforms 
-    the data to a representation suitable for downstream ops.
-    
+        Deprecated in favor of using FastqParser.translate(). If used, should
+        be called after fetching the data and (optionally) running the
+        FastqParser.revcom() op. Transforms the data to a representation 
+        suitable for downstream ops.
+        
         Parameters:
                 None
     
@@ -142,15 +154,22 @@ Depending on how many and what kinds of templates are specified in LibraryDesign
 
 ### FastqParser.translate(force_at_frame=None)
     
-	For each sample in Data, perform in silico translation for DNA sequencing data. 
-	The op will return data containing translated peptide lists. If used, should be 
-    called after fetching the data and (optionally) running the FastqParser.revcom() op.
-    
+    	For each sample in Data, perform in silico translation for DNA sequencing data. 
+    	The op will return data containing translated peptide lists. The op is 
+        intended for one-ORF-per-read NGS data, but not for long, multiple-ORFs-per-read
+        samples.
+             
+        This op should be called after fetching the data and (optionally) running
+        the FastqParser.revcom(), prior to any filtration routines.
+        
+        On top of running translation, this op will also transform the data 
+        to a reprensentation suitable for downstream ops.
+        
         Parameters:
                 force_at_frame: if None, a regular ORF search will be performed. Regular ORF
                                 search entails looking for a Shine-Dalgarno sequence upstream 
                                 of an ATG codon (the exact 5’-UTR sequence signalling an 
-                                ORF should be specified in config.py).
+                                ORF is specified in config.py).
                                 								
                                 if not None, can take values of 0, 1 or 2. This will force-start
                                 the translation at the specified frame regardless of the 
@@ -161,16 +180,28 @@ Depending on how many and what kinds of templates are specified in LibraryDesign
                    force_at_frame=0  ----------> 
                     force_at_frame=1  ---------->
                      force_at_frame=2  ---------->
-					 
+                                 
+              stop_readthrough:	bool (True/False; default: False). if True, translation will
+                                continue even after encountering a stop codon until the 3'-end
+                                of the corresponding read. Note, that an "_" amino acid will
+                                be appended to the peptide sequence at the C-terminus if the 
+                                last encountred codon is missing 1 or 2 bases.
+                                
+                                if False, the op will return true ORF sequences. In this case,
+                                peptide sequences coming from ORFs which miss a stop codon will
+                                be labelled with a "+" amino acid at the C-terminus.
+                                
+                                Should be flagged True for ORFs with no stop codon inside the read.
+				 
         Returns:
                 Data object containing peptide sequence information
 
 ### FastqParser.len_filter(where=None, len_range=None)
     
-    For each sample in Data, filter out sequences longer/shorter than the specified 
-    library designs. Alternatively, a length range of sequences to take can be optionally 
-    specified to filter out the entries (NGS reads) outside of this range.
-    
+        For each sample in Data, filter out sequences longer/shorter than the specified 
+        library designs. Alternatively, a length range of sequences to take can be optionally 
+        specified to filter out the entries (NGS reads) outside of this range.
+        
         Parameters:
                    where: 'dna' or 'pep' to specify which dataset the op 
                           should work on.
@@ -184,9 +215,9 @@ Depending on how many and what kinds of templates are specified in LibraryDesign
 				
 ### FastqParser.cr_filter(where=None, loc=None, tol=1)
     
-    For each sample in Data, filter out sequences not containing intact constant
-    regions. Entries (NGS reads) bearing constant regions with amino acids outside
-	of the library design specification will be discarded.    
+        For each sample in Data, filter out sequences not containing intact constant
+        regions. Entries (NGS reads) bearing constant regions with amino acids outside
+    	of the library design specification will be discarded.    
 	
         Parameters:
                    where: 'dna' or 'pep' to specify which dataset the op 
@@ -214,9 +245,9 @@ Depending on how many and what kinds of templates are specified in LibraryDesign
  				
 ### FastqParser.vr_filter(where=None, loc=None, sets=None)
     
-    For each sample in Data, filter out sequences not containing intact variable 
-    regions. Entries (NGS reads) bearing variable regions with amino acids outside
-	of the library design specification will be discarded.
+        For each sample in Data, filter out sequences not containing intact variable 
+        regions. Entries (NGS reads) bearing variable regions with amino acids outside
+    	of the library design specification will be discarded.
     
         Parameters:
                    where: 'dna' or 'pep' to specify which dataset the op 
@@ -252,10 +283,10 @@ Depending on how many and what kinds of templates are specified in LibraryDesign
 				
 ### FastqParser.filt_ambiguous(where=None)
     
-    For each sample in Data, filter out sequences not containing intact ambiguous 
-    tokens. For DNA, these are "N" nucleotides, which Illumina NGS routines occasionally
-    assign during base calling. For peptides, these are any sequences containing
-    amino acids outside of the translation table specification.	
+        For each sample in Data, filter out sequences not containing intact ambiguous 
+        tokens. For DNA, these are "N" nucleotides, which Illumina NGS routines occasionally
+        assign during base calling. For peptides, these are any sequences containing
+        amino acids outside of the translation table specification.	
     
         Parameters:
                    where: 'dna' or 'pep' to specify which dataset the op 
@@ -267,8 +298,8 @@ Depending on how many and what kinds of templates are specified in LibraryDesign
 				
 ### FastqParser.drop_data(where=None)
     
-    For each sample in Data, delete datasets specified in 'where'. See documentation 
-    on Data objects above for more information.
+        For each sample in Data, delete datasets specified in 'where'. See documentation 
+        on Data objects above for more information.
     
         Parameters:
                    where: 'dna', 'pep' or 'q' to specify which datasets 
@@ -279,8 +310,8 @@ Depending on how many and what kinds of templates are specified in LibraryDesign
 				
 ### FastqParser.q_score_filt(minQ=None, loc=None)
     
-    For each sample in Data, filter out sequences associated with Q scores below 
-    the specified threshold minQ.
+        For each sample in Data, filter out sequences associated with Q scores below 
+        the specified threshold minQ.
     
         Parameters:
                      loc: a list of ints to specify which regions 
@@ -296,11 +327,11 @@ Depending on how many and what kinds of templates are specified in LibraryDesign
 		
 ### FastqParser.fetch_at(where=None, loc=None)
     
-    For each sample in Data, for a dataset specified by 'where', fetch the regions
-    specified by 'loc'. Other regions are discarded. 
-    
-    Collapses sample's internal state (see above explanation for Data objects)
-    
+        For each sample in Data, for a dataset specified by 'where', fetch the regions
+        specified by 'loc' and discard other sequence regions.
+        
+        Collapses sample's internal state.
+        See documentation on Data objects for more information.
     
         Parameters:
                    where: 'dna' or 'pep' to specify which dataset the op 
@@ -309,25 +340,25 @@ Depending on how many and what kinds of templates are specified in LibraryDesign
                      loc: a list of ints to specify regions to be fetched 
 						  
         Returns:
-                Transformed Data object				
+                Transformed Data object					
 
 ### FastqParser.unpad()
     
-    For each sample in Data, unpads the D, Q, P arrays. For each array, removes 
-	the columns where every value is a padding token. See documentation on Data 
-    objects above for more information.
+        For each sample in Data, unpads the D, Q, P arrays. For each array, removes 
+    	the columns where every value is a padding token. See documentation on Data 
+        objects for more information.
 
         Parameters:
                 None	
 						  
         Returns:
-                Transformed Data object		
+                Transformed Data object			
 				
 ### FastqParser.len_summary(where=None, save_txt=False)
     
-    For each sample in Data, compute the distribution of peptide/DNA sequence lengths
-    (specified by 'where') and plot the resulting histogram in the parser output folder
-    as specified by config.py. Optionally, the data can also be written to a txt file.
+        For each sample in Data, compute the distribution of peptide/DNA sequence lengths
+        (specified by 'where') and plot the resulting histogram in the parser output folder
+        as specified by config.py. Optionally, the data can also be written to a txt file.
     
         Parameters:
                    where: 'dna' or 'pep' to specify which dataset the op 
@@ -341,9 +372,9 @@ Depending on how many and what kinds of templates are specified in LibraryDesign
 				
 ### FastqParser.convergence_summary(where=None)
     
-    For each sample in Data, perform basic library convergence analysis on a sequence 
-    level. Computes normalized Shannon entropy, and postition-wise sequence conservation. 
-    Plots the results in the parser output folder as specified by config.py.
+        For each sample in Data, perform basic library convergence analysis on a sequence 
+        level. Computes normalized Shannon entropy, and postition-wise sequence conservation. 
+        Plots the results in the parser output folder as specified by config.py.
     
         Parameters:
                    where: 'dna' or 'pep' to specify which dataset the op 
@@ -355,18 +386,24 @@ Depending on how many and what kinds of templates are specified in LibraryDesign
 				
 ### FastqParser.freq_summary(where=None, loc=None, save_txt=False)
     
-    Perform basic library convergence analysis on a token level. For each sample in Data, 
-    computes the frequency of each token in the dataset. Plots the results in the parser 
-    output folder as specified by config.py. Optionally, the data can also be written to
-    a txt file.
-    
-    Collapses sample's internal state (see above explanation for Data objects)
-    	
+        Perform basic library convergence analysis at a token level. For each sample in Data, 
+        computes the frequency of each token in the dataset. Plots the results in the parser 
+        output folder as specified by config.py. Optionally, the data can also be written to
+        a txt file.
+
         Parameters:
                    where: 'dna' or 'pep' to specify which dataset the op 
                           should work on.
 						  
-                     loc: a list of ints to specify regions to be analyzed
+                     loc: a list of ints to specify regions to be analyzed;
+                          in this case, the op will collapse sample's internal
+                          state (see explanation for Data objects)
+                          
+                          OR
+                          
+                          'all': to get the same statistics over the entire sequence;
+                                 in this case, the op will NOT collapse sample's 
+                                 internal state
 
                 save_txt: if True, the data will be written to a txt file saved
                           in the same folder as the .png and .svg plots						 
@@ -376,16 +413,22 @@ Depending on how many and what kinds of templates are specified in LibraryDesign
 
 ### FastqParser.q_summary(loc=None, save_txt=False)
     
-    For each sample in Data, compute basic statistics of Q scores. 
-	For each position in regions specified by 'loc', computes the mean and standard deviation
-    of Q scores. Plots the results in the parser output folder as specified by config.py.
-    Optionally, the data can also be written to a txt file.
-    	
-    Collapses sample's internal state (see above explanation for Data objects)
-    	
+        For each sample in Data, compute some basic Q score statistics.
+    	For each position in regions specified by 'loc', computes the mean and standard deviation
+        of Q scores. Plots the results in the parser output folder as specified by config.py.
+        Optionally, the data can also be written to a txt file.
+        	    	
         Parameters:					  
-                     loc: a list of ints to specify regions to be analyzed
-
+                     loc: a list of ints to specify regions to be analyzed;
+                          in this case, the op will collapse sample's internal
+                          state (see explanation for Data objects)
+                          
+                          OR
+                          
+                          'all': to get the same statistics over the entire Q 
+                                 score arrays. in this case, the op will NOT 
+                                 collapse sample's internal state
+                          
                 save_txt: if True, the data will be written to a txt file saved
                           in the same folder as the .png and .svg plots						 
                           						  							  
@@ -394,9 +437,9 @@ Depending on how many and what kinds of templates are specified in LibraryDesign
 				
 ### FastqParser.count_summary(where=None, top_n=None, fmt=None)
     
-    For each sample in Data, counts the number of times each unique sequence is found in the
-    dataset specified by 'where'. The results are written to a file in the parser output  
-    folder as specified by config.py.
+        For each sample in Data, counts the number of times each unique sequence is found in the
+        dataset specified by 'where'. The results are written to a file in the parser output  
+        folder as specified by config.py.
         
         Parameters:					  
                    where: 'dna' or 'pep' to specify which dataset the op 
@@ -411,12 +454,27 @@ Depending on how many and what kinds of templates are specified in LibraryDesign
                           						  							  
         Returns:
                 Data object (no transformation)
-				
+		
+### FastqParser.template_summary(where=None)
+    
+        For each sample in Data, compute the number of matches between the dataset 
+        specified by 'where' and the corresponding library templates. The results 
+        are written to a file in the parser output folder as specified by config.py.
+        
+        In other words, summarize where dataset sequences come from (from which
+        libraries). The op could also be called "_internal_state_summary"
+        
+        Parameters:					  
+                   where: 'dna' or 'pep' to specify which dataset the op 
+                          should work on                        						  							  
+        Returns:
+                Data object (no transformation)
+
 ### FastqParser.save(where=None, fmt=None)
     
-    For each sample in Data, save the dataset specified by 'where'. The results are written 
-    to a file in the parser output folder as specified by config.py.
-    
+        For each sample in Data, save the dataset specified by 'where'. The results are written 
+        to a file in the parser output folder as specified by config.py.
+        
         Parameters:					  
                    where: 'dna' or 'pep' to specify which dataset the op 
                           should work on.
@@ -426,8 +484,3 @@ Depending on how many and what kinds of templates are specified in LibraryDesign
                           						  							  
         Returns:
                 Data object (no transformation)
-
-# Known issues
-1. After FastqParser.fetch_at() is called, the assignment between fetched sequence regions and LibaryDesign gets broken. It means that no other ops that takes 'loc' as a keyword can be called after FastqParser.fetch_at() [ops that don't take 'loc' as a keyword are ok]. To be fixed.
-2. FastqParser.q_summary() collapses sample's internal state, which can often be inconvenient. To be fixed.
-3. The parser will behave in weird ways for libraries containing ORFs without stop codons (which can happen if just a fraction of the entire ORF is read during NGS). In particular, translation will append a '+' symbol (could even be two, sometimes) to the C-terminus of each sequence. This breaks the FastqParser.filt_ambiguous() op and may have unintended consequences for other ops too. To be fixed.
