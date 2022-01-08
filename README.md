@@ -22,7 +22,7 @@ The easiest way to get these up and running is downloading and installing [Anaco
 The package provides the tools for analysis. Specific pipelines need to be built for individual applications as explained below. code/config.py and code/main.py also provide examples. _The code is released under the GNU General Public License v3.0 without any explicit or implied warranty. Use it at your own discretion._
 
 # Changelog 
-## (Jan 08, 2022)
+## Jan 08, 2022
 1. Reworked how translation is done. Now, stop codonds should be designed as "\*" in the translation table, consistently with the widely accepted nomenclature. Added a new keyword for *translate* op: *stop_readthrough*. Normally, translation will terminate upon encountering a stop codon in the ORF. if *stop_readthrough=True* is specified, translation will keep going even after encountering a stop codon. The resulting peptides will have "\*" as a part of their sequence. Another change: if an ORF runs all the way to the 3'-end of the DNA read, translation may encounter an "incomplete codon", i.e., 1 or 2 bases instead of the usual triplet. All such incomplete codons encode a specially reversed "\_" amino acid, which needs to be specified as a part of library design, when parsing the libraries with no stop codon inside the ORF.
 2. Added a new op: *template_summary*. Details are below.
 3. Fixed the *fetch_at* op. Now, other filtration/summary routines can be called after it (*fetch_at* used to break everything downstream of it).
