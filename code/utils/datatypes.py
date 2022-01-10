@@ -8,7 +8,7 @@ Created on Tue Aug  3 17:45:24 2021
 import numpy as np
 class SequencingSample:
     '''
-    See below the documentation for Data object.
+    See below: Data object.
     '''
     def __init__(self, D=None, Q=None, P=None, name='unnamed'):
         self.D = D

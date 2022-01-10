@@ -1026,9 +1026,9 @@ class FastqParser(Handler):
                     result[row_mask, :len(col_mask)] = arr[row_mask][:,col_mask]
                     sample[where] = result
                     
-                #reindex the library design accordingly so that the downstream ops
-                #can still be called with originally defined loc pointers
-                design.truncate_and_reindex(loc)
+            #reindex the library design accordingly so that the downstream ops
+            #can still be called with originally defined loc pointers
+            design.truncate_and_reindex(loc)
                     
             return data
         return fetch_region
@@ -1537,7 +1537,7 @@ class FastqParser(Handler):
             Returns:
                     Fetched Fastq data as an instance of Data
         '''
-        fnames = [os.path.join(self.dirs.seq_data, x) for x in os.listdir(self.dirs.seq_data) if x.endswith(".fastq.gz")]
+        fnames = [os.path.join(self.dirs.seq_data, x) for x in os.listdir(self.dirs.seq_data) if x.endswith(".gz")]
         if not fnames:
             msg = f'No .fastq.gz files were found in {self.dirs.seq_data}! Aborting.'
             self.logger.error(msg)
