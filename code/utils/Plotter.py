@@ -163,3 +163,71 @@ class SequencingData:
         fig.savefig(svg, bbox_inches = 'tight')
         fig.savefig(png, bbox_inches = 'tight')
         plt.close()   
+
+class Analysis:
+    def tSNE(embedding, sizes, labels, basename):
+        
+        import seaborn as sns
+
+        fig = plt.figure(figsize=(8, 8), dpi=300)
+        ax = fig.add_subplot(111)
+        plt.scatter(embedding[:,0][::-1], embedding[:,1][::-1], 
+                    alpha=0.8, 
+                    c=labels[::-1],
+                    cmap = sns.color_palette("mako", labels.max(), as_cmap=True),
+                    marker='o', edgecolors='none', 
+                    s=sizes[::-1])
+    
+        for cluster in labels:
+            if not cluster == -1:
+                x_coord = np.average(embedding[:,0][labels == cluster])
+                y_coord = np.average(embedding[:,1][labels == cluster])
+                plt.text(x=x_coord, 
+                         y=y_coord,
+                         s=f'{cluster+1}', 
+                         size=16,
+                         weight='bold',
+                         alpha=0.8,
+                         color='#c38928',
+                         horizontalalignment='center',
+                         verticalalignment='center')            
+    
+        ax.set_xlabel('tSNE1, scaled', fontsize=20)
+        ax.set_ylabel('tSNE2, scaled', fontsize=20)      
+        ax.tick_params(axis='both', which='major',  labelsize=16)                                               
+                   
+        title = 'tSNE clustering'
+        ax.set_title(title, fontsize=24, y=1.04)
+                                              
+        #save png and svg, and close the file
+        svg = basename + '.svg'
+        png = basename + '.png'
+        fig.savefig(svg, bbox_inches = 'tight')
+        fig.savefig(png, bbox_inches = 'tight')
+        plt.close()   
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -72,7 +72,7 @@ class ParserConfig:
                     monomers={
                               1: ('A', 'G', 'T', 'C'),
                               2: ('G', 'T'),
-                             },
+                              },
                     
                     lib_type='dna'
                         
@@ -100,12 +100,13 @@ class ParserConfig:
                               1: ('A', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'K', 'L', 'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'V', 'W', 'Y'),
                               2: ('M'),
                               3: ('C')
-                             },
+                              },
                     
                     lib_type='pep'
                         
-                           )
- 
+                            )
+    
+  
 class TrackerConfig:
     
     #directory holding sequencing data files (fastq or fastq.gz)

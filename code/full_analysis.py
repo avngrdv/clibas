@@ -49,8 +49,10 @@ if __name__ == '__main__':
                 par.template_summary(where='pep'),
                 par.unpad(),
                 par.save(where='pep', fmt='npy'),
-             ])
-    
+                par.template_summary(where='pep'),
+                #par.tSNE_analysis(where='pep', top_n=1000) #uncomment this line to run tSNE
+              ])
+
     #this will execute the pipeline
     #if save_summary=True, summary will be saved in 
     #the logs folder as specified in the config file
