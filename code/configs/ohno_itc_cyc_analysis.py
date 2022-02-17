@@ -31,26 +31,26 @@ if __name__ == '__main__':
     pip.enque([
                 par.fetch_gz_from_dir(), 
                 par.translate(stop_readthrough=False),         
-                par.len_summary(where='dna', save_txt=True),
-                par.len_summary(where='pep', save_txt=True),
+                # par.len_summary(where='dna', save_txt=True),
+                # par.len_summary(where='pep', save_txt=True),
                 par.len_filter(where='pep'),
-                par.convergence_summary(where='dna'),
-                par.convergence_summary(where='pep'),            
-                par.cr_filter(where='pep', loc=[1], tol=3),
-                par.vr_filter(where='pep', loc=[0], sets=[1, 2, 3]),
-                par.q_summary(loc='all', save_txt=True),
+                # par.convergence_summary(where='dna'),
+                # par.convergence_summary(where='pep'),            
+                par.cr_filter(where='pep', loc=[0, 2], tol=4),
+                # par.vr_filter(where='pep', loc=[1], sets=[1]),
+                # par.q_summary(loc='all', save_txt=True),
                 par.filt_ambiguous(where='pep'),
-                par.q_score_filt(minQ=20, loc=[1]),
-                par.fetch_at(where='pep', loc=[0]),
-                par.freq_summary(where='pep', loc=[0], save_txt=True),
-                par.freq_summary(where='dna', loc=[1], save_txt=True),
+                par.q_score_filt(minQ=30, loc=[1]),
+                par.fetch_at(where='pep', loc=[1]),
+                # par.freq_summary(where='pep', loc=[1], save_txt=True),
+                # par.freq_summary(where='dna', loc=[1], save_txt=True),
                 par.count_summary(where='pep', top_n=500, fmt='csv'),
                 par.count_summary(where='pep', top_n=500, fmt='fasta'),
                 par.template_summary(where='pep'),
                 par.unpad(),
                 par.save(where='pep', fmt='npy'),
-                par.template_summary(where='pep'),
-                #par.tSNE_analysis(where='pep', top_n=1000) #uncomment this line to run tSNE
+                # par.template_summary(where='pep'),
+                # par.tSNE_analysis(where='pep', top_n=1000) #uncomment this line to run tSNE
               ])
 
     #this will execute the pipeline
@@ -60,16 +60,39 @@ if __name__ == '__main__':
         
         
     
+    '''
     
     
     
-    
+aaSMILES = [  
+                '',    
+                'N[C@@H](C)C(=O)',           
+                'N[C@@H](Cc1ccc(N=C=S)cc1)C(=O)',
+                'N[C@@H](CC(=O)O)C(=O)',
+                'N[C@@H](CCC(=O)O)C(=O)',
+                'N[C@@H](Cc1ccccc1)C(=O)',
+                'NCC(=O)',
+                'N[C@@H](Cc1c[nH]cn1)C(=O)',
+                'N[C@@H]([C@H](CC)C)C(=O)',
+                'N[C@@H](CCCCN)C(=O)',        
+                'N[C@@H](CC(C)C)C(=O)',
+                'N[C@@H](CCSC)C(=O)',
+                'N[C@@H](CC(=O)N)C(=O)',
+                'O=C[C@@H]1CCCN1',  
+                'N[C@@H](CCC(=O)N)C(=O)',
+                'N[C@@H](CCCNC(=N)N)C(=O)',
+                'N[C@@H](CO)C(=O)',
+                'N[C@@H]([C@H](O)C)C(=O)',
+                'N[C@@H](C(C)C)C(=O)',
+                'N[C@@H](Cc1c[nH]c2c1cccc2)C(=O)',
+                'N[C@@H](Cc1ccc(O)cc1)C(=O)'
+          ]
 
 
 
 
 
-
+'''
 
 
 

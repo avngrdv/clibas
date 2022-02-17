@@ -8,16 +8,18 @@ import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib import rcParams
+import seaborn as sns
 
 rcParams['font.family'] = 'sans-serif'
 rcParams['font.sans-serif'] = ['Arial']
 
 class SequencingData:
-    '''
-    Just a container for FastqParser-related plotters
-    '''
-    def L_distribution(X, Y, where, basename):
+    #Just a container for FastqParser-related plotters
     
+    def L_distribution(X, Y, where=None, basename=None):
+        
+        if not where: where=''
+            
         fig = plt.figure(figsize=(18, 6), dpi=300)
         ax = fig.add_subplot(111)
         plt.bar(X, Y, color='#0091b5')
@@ -31,15 +33,17 @@ class SequencingData:
         ax.tick_params(axis='both', which='major',  labelsize=25)                                                 
         ax.set_ylabel('Count', fontsize=30)                     
     
+
         title = f'Distribution of sequence lengths in {where} dataset'
         ax.set_title(title, fontsize=34, y=1.04)
-                                              
-        #save png and svg, and close the file
-        svg = basename + '.svg'
-        png = basename + '.png'
-        fig.savefig(svg, bbox_inches = 'tight')
-        fig.savefig(png, bbox_inches = 'tight')
-        plt.close()    
+                    
+        if basename is not None:                          
+            #save png and svg, and close the file
+            svg = basename + '.svg'
+            png = basename + '.png'
+            fig.savefig(svg, bbox_inches = 'tight')
+            fig.savefig(png, bbox_inches = 'tight')
+            plt.close()    
 
     def dataset_convergence(C, shannon, where, basename):
     
@@ -99,13 +103,13 @@ class SequencingData:
         plt.close()
 
 
-    def tokenwise_frequency(freq, yticknames, where, loc, basename):
+    def tokenwise_frequency(freq, yticknames, where=None, loc=None, basename=None):
     
-        if where == 'dna':
-            ylabel = 'Base'
-
-        if where == 'pep':
-            ylabel = 'Amino acid'
+        if not where: where=''
+        
+        if where == 'dna': ylabel = 'Base'
+        elif where == 'pep': ylabel = 'Amino acid'
+        else: ylabel = 'Token'
             
         figsize = (1 + freq.shape[1] / 2, freq.shape[0] / 2)
         fig, ax = plt.subplots(1, 1, figsize=figsize, dpi=300)
@@ -124,17 +128,22 @@ class SequencingData:
         ax.set_yticklabels(yticknames)
     
         #set labels
-        ax.set_xlabel(f'Position inside library region(s) {loc}', fontsize=21)
+        if loc is not None:
+            ax.set_xlabel(f'Position inside library region(s) {loc}', fontsize=21)
+            
         ax.set_ylabel(ylabel, fontsize=21)
         ax.tick_params(axis='both', which='major', labelsize=16)
         ax.set_title(f'Position-wise frequency map for {where} dataset', fontsize=25)
         
-        #save png and svg, and close the file
-        svg = basename + '.svg'
-        png = basename + '.png'
-        fig.savefig(svg, bbox_inches = 'tight')
-        fig.savefig(png, bbox_inches = 'tight')
-        plt.close()    
+        if basename is not None:
+            #save png and svg, and close the file
+            svg = basename + '.svg'
+            png = basename + '.png'
+            fig.savefig(svg, bbox_inches = 'tight')
+            fig.savefig(png, bbox_inches = 'tight')
+            plt.close()
+            
+        return
 
     def Q_score_summary(avg, std, loc, basename):
          
@@ -165,6 +174,7 @@ class SequencingData:
         plt.close()   
 
 class Analysis:
+    
     def tSNE(embedding, sizes, labels, basename):
         
         import seaborn as sns
@@ -206,15 +216,107 @@ class Analysis:
         fig.savefig(png, bbox_inches = 'tight')
         plt.close()   
 
+    def UMAP_HDBSCAN(Y,
+                     labels,
+                     C=None, 
+                     sample_name=None, 
+                     basename=None, 
+                     show_annotations=False):
+        
+        
+        cmap = sns.color_palette("husl", labels.max(), as_cmap=True)
+        fig = plt.figure(figsize=(8, 8), dpi=300)
+        ax = fig.add_subplot(111)
+        
+        if C is not None:
+            sizes = 5000 * np.power(np.divide(C, C.sum()), 0.55)
+        else:
+            sizes = 5000 * np.power(np.divide(1, Y.shape[0]), 0.55)
+        
+        if not sample_name: sample_name = 'unnamed sample'
+        
+        noise = labels == -1
+        plt.scatter(Y[:,0][noise][::-1], 
+                    Y[:,1][noise][::-1], 
+                    alpha=0.6, 
+                    c='#070D0D',
+                    marker='o', edgecolors='none', 
+                    s=sizes[noise][::-1]
+                    )     
+        
+        aint_noise = labels != -1
+        plt.scatter(Y[:,0][aint_noise][::-1], 
+                    Y[:,1][aint_noise][::-1], 
+                    alpha=0.6, 
+                    c=labels[aint_noise][::-1],
+                    cmap = cmap,
+                    marker='o', edgecolors='none', 
+                    s=sizes[aint_noise][::-1]
+                    )     
+      
+        if show_annotations:
+            for cluster in labels:
+                if not cluster == -1:
+                    x_coord = np.average(Y[:,0][labels == cluster])
+                    y_coord = np.average(Y[:,1][labels == cluster])
+                    plt.text(x=x_coord, 
+                              y=y_coord,
+                              s=f'{cluster}', 
+                              size=15,
+                              weight='bold',
+                              alpha=0.3,
+                              color='#323232',
+                              horizontalalignment='center',
+                              verticalalignment='center')      
+         
+        plt.axis('off')
 
+        title = f'umap/hdbscan: {sample_name}'
+        ax.set_title(title, fontsize=20, y=1.04)
+    
+        if basename is not None:
+            #save png and svg, and close the file
+            svg = basename + '.svg'
+            png = basename + '.png'
+            fig.savefig(svg, bbox_inches = 'tight')
+            fig.savefig(png, bbox_inches = 'tight')
+            plt.close()
+            
+        plt.ion
+        return
 
+    def ClusteringHyperParams(min_clusters, min_samples, scores, 
+                              sample_name=None, 
+                              basename=None):
+        
+        fig = plt.figure(figsize=(6, 7), dpi=300)
+        ax = fig.add_subplot(111)
+        c = plt.pcolor(scores, cmap=sns.color_palette('mako', as_cmap=True))
+        fig.colorbar(c, ax=ax)
+        
+        ax.set_xlabel('min_sample', fontsize=16)
+        ax.set_ylabel('min_cluster', fontsize=16)      
+    
+        ax.set_xticks(np.arange(len(min_samples)) + 0.5)
+        ax.set_yticks(np.arange(len(min_clusters)) + 0.5)
+        
+        ax.set_xticklabels(min_samples)
+        ax.set_yticklabels(min_clusters)    
+        
+        ax.tick_params(axis='both', which='major',  labelsize=14)                                               
+                   
+        title = f'hdbscan clustering scores: {sample_name}'
+        ax.set_title(title, fontsize=18, y=1.02)    
+        
+        if basename is not None:
+            #save png and svg, and close the file
+            svg = basename + '.svg'
+            png = basename + '.png'
+            fig.savefig(svg, bbox_inches = 'tight')
+            fig.savefig(png, bbox_inches = 'tight')
+            plt.close()
 
-
-
-
-
-
-
+        return
 
 
 

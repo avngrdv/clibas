@@ -7,7 +7,7 @@ Created on Fri Mar 27 20:59:03 2020
 import numpy as np    
 class Template:
 
-    def __init__(self, lib_seq='', monomers={}, wt=None, lib_type=None):
+    def __init__(self, lib_seq='', monomers={}, wt=None, lib_type=None, val_monomer=None):
         '''
         The constructor that holds the information about the library for a single
         template, i.e. the generic peptide sequence, amino acid positions subject to 
@@ -19,11 +19,11 @@ class Template:
         self.monomers = monomers
         self.lib_type = lib_type
         
-        self._typecheck()
+        self._typecheck(val_monomer)
         self._build()
         return
     
-    def _typecheck(self):
+    def _typecheck(self, val_monomer):
     
         if not isinstance(self.lib_seq, str):
             raise ValueError("Library design must be specified as a string (dtype=str). . .")
@@ -38,22 +38,18 @@ class Template:
         if self.lib_type != 'dna' and self.lib_type != 'pep':
             raise ValueError('Library type can only accept either "dna" or "pep" as valid values')
     
-        import config
-        if self.lib_type == 'dna':
-            lookup_monomers = config.constants.bases
-        else:
-            lookup_monomers = config.constants.aas
-        
-        for m in self.lib_seq:
-            if not m.isdigit():
-                if not m in lookup_monomers:
-                    raise ValueError('All library design monomers must be specified in the lookup tables. . .') 
-                
-        for key in self.monomers:
-            for m in self.monomers[key]:
-                 if not m in lookup_monomers:
-                    raise ValueError('All library design monomers must be specified in the lookup tables. . .') 
-        
+        if val_monomer is not None:
+    
+            for m in self.lib_seq:
+                if not m.isdigit():
+                    if not m in val_monomer:
+                        raise ValueError('All library design monomers must be specified in the lookup tables!') 
+                    
+            for key in self.monomers:
+                for m in self.monomers[key]:
+                     if not m in val_monomer:
+                        raise ValueError('All library design monomers must be specified in the lookup tables!') 
+            
         return
     
     def _build(self):
@@ -127,7 +123,7 @@ class Template:
         '''
         
         if not np.all(np.in1d(loc, self.loc)):
-            raise ValueError('Library design: a call to non-existent region was made. . .')
+            raise ValueError('Library design: a call to a non-existent region was made. . .')
         
         if return_mask:
             arr = self.mask
@@ -230,7 +226,7 @@ class LibraryDesign:
     template and so on. LibraryDesign objects are defined in the config file. 
     '''
     
-    def __init__(self, templates=[], monomers={}, lib_type=None):
+    def __init__(self, templates=[], monomers={}, lib_type=None, val_monomer=None):
         '''
         templates should be passed as a list of library design strings
         '''
@@ -239,7 +235,8 @@ class LibraryDesign:
         self.templates = tuple(
                                Template(lib_seq=x, 
                                         monomers=self.monomers, 
-                                        lib_type=self.lib_type) 
+                                        lib_type=self.lib_type,
+                                        val_monomer=val_monomer) 
                                
                                for x in templates
                               )
