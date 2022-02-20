@@ -14,12 +14,10 @@ class Pipeline(Handler):
     def __init__(self, *args):
         super(Pipeline, self).__init__(*args)
         self._on_startup()
-        
-        self._on_completion()
         return
 
     def __repr__(self):
-        return f'<Pipeline object; current queue size: {len(self.que)} routine(s)>'
+        return f'<Pipeline object; current queue size: {len(self.que)} op(s)>'
 
     def _on_startup(self):
         self.que = []
@@ -85,17 +83,17 @@ class Pipeline(Handler):
         
         return df
     
-    def enque(self, routines):
+    def enque(self, ops):
         '''
         Takes a list of functions and adds them to the pipeline queue.
         self.deque will take some data as an argument and apply dump
         the queue on it, i.e. sequentially transform the data by applying
-        the queued up routines. 
+        the queued up ops. 
 
         Parameters
         ----------
-        routines : a list of functions capable of acting on data.
-                   every routine should take data as the only argument
+        ops :      a list of functions capable of acting on data.
+                   every op should take data as the only argument
                    and return transformed data in the same format (Data object)
 
         Returns
@@ -104,17 +102,17 @@ class Pipeline(Handler):
 
         '''
         
-        for func in routines:
+        for func in ops:
             self.que.append(func)
             
-        msg = f'{len(routines)} routines appended to pipeline; current queue size: {len(self.que)}'
+        msg = f'{len(ops)} ops appended to pipeline; current queue size: {len(self.que)}'
         self.logger.info(msg)
         
         return        
 
     def run(self, data=None, save_summary=True):
         '''
-        Chainlinks the list of routines one by one to 
+        Chainlinks the list of ops one by one to 
         sequentially transform the data. The method will
         basically execute the queued up experiment.
 
@@ -141,7 +139,7 @@ class Pipeline(Handler):
         for _ in range(len(self.que)):
         
             func = self.que.pop(0)
-            msg = f'Queuing <{func.__name__}> routine. . .'
+            msg = f'Queuing <{func.__name__}> op. . .'
             self.logger.info(msg)
             
             t = time.time()

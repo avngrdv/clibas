@@ -171,11 +171,6 @@ class Handler:
             pass
         
         return
-        
-    def _on_completion(self):
-        msg = f'The following handler was succesfully initialized: {self}'
-        self.logger.info(msg)
-        return
 
     def _validate_designs(self):
         

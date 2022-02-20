@@ -113,8 +113,8 @@ class Template:
     def _fancy_index(self, arr, loc):
         out = []
         for x in loc:
-            out.extend(arr[x])
-            
+            ind = np.where(self.loc == x)[0][0]
+            out.extend(arr[ind])
         return out
 
     def __call__(self, loc, return_mask=False):

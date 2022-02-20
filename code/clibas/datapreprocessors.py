@@ -8,12 +8,12 @@ import os
 from clibas.baseclasses import Handler
 import numpy as np
 from clibas.datatypes import Data, AnalysisSample
-import clibas.featurize as featurize
+import clibas.featurization as featurize
 
 class DataPreprocessor(Handler):
     '''
     A processor for assembling machine learning training/testing data
-    from peptide sequence lists. DataHandler, i.e., every public routine
+    from peptide sequence lists. DataHandler, i.e., every public op
     acts on Data, transforms it, and returns the transformed version.
     
     The class is a container for ops commonly used for dataset preprocessing.    
@@ -21,7 +21,7 @@ class DataPreprocessor(Handler):
     
     def __init__(self, *args):
         super(DataPreprocessor, self).__init__(*args)    
-        self._on_completion()
+        #self._on_completion()
         return
 
     def __repr__(self):
@@ -198,7 +198,7 @@ class DataPreprocessor(Handler):
         If an entry is found in X1 and X2, pop it from X1 and X2.
         The function only makes sense if data contains two X sets.
         Hence, a warning will be issued if more/less than 2 datasets
-        are passed, and the routine will be ignored.
+        are passed, and the op will be ignored.
         
         Note: the implementation is very fast, but it breaks if the 
               arrays are too big (particularly, their -1 axis)
@@ -215,12 +215,12 @@ class DataPreprocessor(Handler):
         def pop_interset_duplicates(data):
             
             if len(data) != 2:
-                msg = f'Exactly two X datasets should be passed to the <pop_interset_duplicates> routine. Passed {len(data)}. Operation will be ignored.'
+                msg = f'Exactly two X datasets should be passed to the <pop_interset_duplicates> op. Passed {len(data)}. Operation will be ignored.'
                 self.logger.warning(msg)
                 return data
             
             if data.samples[0].X.dtype != np.int8 or data.samples[1].X.dtype != np.int8:
-                msg = f'<pop_interset_duplicates> routine expected datasets of dtype=np.int8. Received: {data.samples[0].X.dtype, data.samples[1].X.dtype}. Operation will be ignored.'
+                msg = f'<pop_interset_duplicates> op expected datasets of dtype=np.int8. Received: {data.samples[0].X.dtype, data.samples[1].X.dtype}. Operation will be ignored.'
                 self.logger.warning(msg)
                 return data                
     
@@ -323,7 +323,7 @@ class DataPreprocessor(Handler):
                 isinstance(sample_size, float)
                ):
             
-            msg = '<sample_from_datasets> routine expected sample_size as type=int or float; received: {type(sample_size)}'
+            msg = '<sample_from_datasets> op expected sample_size as type=int or float; received: {type(sample_size)}'
             self.logger.error(msg)
             raise ValueError(msg)
        
@@ -388,13 +388,13 @@ class DataPreprocessor(Handler):
                 isinstance(test_fraction, float)
                ):
             
-            msg = '<test_train_split> routine expected test_fraction as type=int or float; received: {type(test_fraction)}'
+            msg = '<test_train_split> op expected test_fraction as type=int or float; received: {type(test_fraction)}'
             self.logger.error(msg)
             raise ValueError(msg)
             
         def test_train_split(data):
             if data.size != 1:
-                msg = 'A single dataset should be passed to the test_train_split routine. Operation is ignored.'
+                msg = 'A single dataset should be passed to the test_train_split op. Operation is ignored.'
                 self.logger.warning(msg)
                 return data    
             
@@ -492,7 +492,7 @@ class DataPreprocessor(Handler):
 
         if alphabet is not None:
             if not isinstance(alphabet, (tuple, list, np.ndarray)):
-                msg = '<featurize_to_h5> routine expected param alphabet as type=(list, tuple, np.ndarray); received: {type(alphabet)}'
+                msg = '<featurize_to_h5> op expected param alphabet as type=(list, tuple, np.ndarray); received: {type(alphabet)}'
                 self.logger.error(msg)
                 raise ValueError(msg)        
 

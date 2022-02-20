@@ -8,6 +8,7 @@ import os, gzip, re, inspect
 from clibas.datatypes import Data, SequencingSample
 from clibas.baseclasses import Handler
 import numpy as np
+import pandas as pd
 
 class FastqParser(Handler):
     '''
@@ -16,7 +17,7 @@ class FastqParser(Handler):
     sequencing data to eliminate noise, etc, and to convert raw NGS output
     to a list of peptides for the downstream applications. 
     
-    Most public routines act on Data objects (except IO data fetchers) to
+    Most public ops act on Data objects (except IO data fetchers) to
     return a transformed instance of Data.
 
     The class also holds a number of ops for basic statistics gathering.
@@ -29,7 +30,7 @@ class FastqParser(Handler):
     
         self._validate_designs()
         self._validate_constants()
-        self._on_completion()
+        # self._on_completion()
         return
         
     def __repr__(self):
@@ -88,7 +89,7 @@ class FastqParser(Handler):
         samples.
              
         This op should be called after fetching the data and (optionally) running
-        the FastqParser.revcom(), prior to any filtration routines.
+        the FastqParser.revcom(), prior to any filtration ops.
         
         On top of running translation, this op will also transform the data 
         to a reprensentation suitable for downstream ops.
@@ -127,17 +128,17 @@ class FastqParser(Handler):
         
         if force_at_frame is not None:
             if not isinstance(force_at_frame, int):
-                msg = f'<translate> routine expected to receive param "force_at_frame" as dtype=int; received: {type(force_at_frame)}'
+                msg = f'<translate> op expected to receive param "force_at_frame" as dtype=int; received: {type(force_at_frame)}'
                 self.logger.error(msg)
                 raise ValueError(msg)
         else:     
             if not hasattr(self, 'utr5_seq'):
-                msg = "5' UTR sequence is not set for the <translation> routine. Can not perform ORF search. Aborting. . ."
+                msg = "5' UTR sequence is not set for the <translation> op. Can not perform ORF search. Aborting. . ."
                 self.logger.error(msg)
                 raise ValueError(msg)   
                 
         if type(stop_readthrough) != bool:
-            msg = f'<translate> routine expected to receive param "stop_readthrough" as type=bool; received: {type(stop_readthrough)}'
+            msg = f'<translate> op expected to receive param "stop_readthrough" as type=bool; received: {type(stop_readthrough)}'
             self.logger.error(msg)
             raise ValueError(msg)   
                                 
@@ -217,7 +218,7 @@ class FastqParser(Handler):
             for sample in data:
     
                 if sample.get_ndims() != 1:
-                    msg = f'<revcom> can only be called on samples holding 1D-represented DNA. Ignoring the routine for {sample.name} sample. . .'
+                    msg = f'<revcom> can only be called on samples holding 1D-represented DNA. Ignoring the op for {sample.name} sample. . .'
                     self.logger.error(msg)
                     raise ValueError(msg)
                 
@@ -253,12 +254,12 @@ class FastqParser(Handler):
         
         if len_range is not None:
             if not isinstance(len_range, (list, tuple)):
-                msg = f'<len_filter> routine expected to receive len_range argument as a list; received: {type(len_range)}'
+                msg = f'<len_filter> op expected to receive len_range argument as a list; received: {type(len_range)}'
                 self.logger.error(msg)
                 raise ValueError(msg)
             
             if len(len_range) != 2:
-                msg = f'<len_filter> routine expected to receive len_range as a list with two values; received: len={len(len_range)}'
+                msg = f'<len_filter> op expected to receive len_range as a list with two values; received: len={len(len_range)}'
                 self.logger.error(msg)
                 raise ValueError(msg)                
 
@@ -402,14 +403,14 @@ class FastqParser(Handler):
         self._loc_check(loc, design)
         
         if not isinstance(sets, list):
-            msg = f'variable_region_filter routine expected to receive a list of monomer subsets to parse; received: {type(sets)}'
+            msg = f'variable_region_filter op expected to receive a list of monomer subsets to parse; received: {type(sets)}'
             self.logger.error(msg)
             raise ValueError(msg)            
 
         allowed = set(design.monomers.keys())
         passed = set(sets)
         if not passed.issubset(allowed):
-            msg = 'Specified variable region sets for <variable_region_filter> routine must constitute a subset of library design monomers.'
+            msg = 'Specified variable region sets for <variable_region_filter> op must constitute a subset of library design monomers.'
             self.logger.error(msg)
             raise AssertionError(msg)
 
@@ -463,7 +464,7 @@ class FastqParser(Handler):
     def filt_ambiguous(self, where=None):
         '''
         For each sample in Data, filter out sequences not containing intact ambiguous 
-        tokens. For DNA, these are "N" nucleotides, which Illumina NGS routines occasionally
+        tokens. For DNA, these are "N" nucleotides, which Illumina NGS ops occasionally
         assign during base calling. For peptides, these are any sequences containing
         amino acids outside of the translation table specification.	
     
@@ -476,7 +477,7 @@ class FastqParser(Handler):
                 tokens
         '''
         self._where_check(where)  
-        allowed_monomers = self._infer_alphabet(where)
+        allowed_monomers = self._infer_alphabet(where, alphabet=None)
             
         def filter_ambiguous(data):      
             for sample in data:
@@ -507,7 +508,7 @@ class FastqParser(Handler):
                 Transformed Data object without dropped datasets
         '''
         if where not in ('pep', 'dna', 'q'):
-            msg = f"Invalid argument passed to <drop_dataset> routine. Expected where = any of ('pep', 'dna', 'q'); got: {where}"
+            msg = f"Invalid argument passed to <drop_dataset> op. Expected where = any of ('pep', 'dna', 'q'); got: {where}"
             self.logger.error(msg)
             raise ValueError(msg)
         
@@ -538,7 +539,7 @@ class FastqParser(Handler):
         '''
         
         if not isinstance(minQ, int):
-            msg = f'<Q_score_filter> routine expected to receive parameter minQ as as int; received: {type(minQ)}'
+            msg = f'<Q_score_filter> op expected to receive parameter minQ as as int; received: {type(minQ)}'
             self.logger.error(msg)  
             raise ValueError(msg)
 
@@ -584,30 +585,49 @@ class FastqParser(Handler):
         self._where_check(where)               
         design = self._infer_design(where)
         self._loc_check(loc, design)        
-        
+
+        def _fetch_reg(arr, sample, design, loc):
+            #initialize the array to hold the results
+            max_len = self._find_max_len(design, loc)
+            result = np.zeros((arr.shape[0], max_len), dtype=arr.dtype)
+            
+            for i, template in enumerate(design):
+                
+                col_mask = template(loc, return_mask=True)                        
+                row_mask = sample._internal_state[:,i]
+                
+                result[row_mask, :len(col_mask)] = arr[row_mask][:,col_mask]
+                #sample[where] = result
+            return result
+            
+            
         def fetch_region(data):
             for sample in data:
                 
                 self._transform_check(sample, inspect.stack()[0][3])
-                arr = sample[where]
                 
                 if not sample._is_collapsed:
-                    msg = f"<fetch_region> routine will collapse sample {sample.name}'s internal state"
+                    msg = f"<fetch_region> op will collapse sample {sample.name}'s internal state"
                     self.logger.info(msg)
                     sample._collapse_internal_state()
+                    
+                #has to be done manually, because in this case dna and pep args 
+                #are not equivalent: where='dna' also means Q scores need to
+                #truncated
+                if where == 'pep':
+                    arr = sample.pep
+                    result = _fetch_reg(arr, sample, design, loc)
+                    sample.pep = result
+                    
+                if where == 'dna':
+                    arr = sample.dna
+                    result = _fetch_reg(arr, sample, design, loc)
+                    sample.dna = result
+                    
+                    arr = sample.Q
+                    result = _fetch_reg(arr, sample, design, loc)
+                    sample.Q = result                    
                 
-                #initialize the array to hold the results
-                max_len = self._find_max_len(design, loc)
-                result = np.zeros((arr.shape[0], max_len), dtype=arr.dtype)
-                
-                for i, template in enumerate(design):
-                    
-                    col_mask = template(loc, return_mask=True)                        
-                    row_mask = sample._internal_state[:,i]
-                    
-                    result[row_mask, :len(col_mask)] = arr[row_mask][:,col_mask]
-                    sample[where] = result
-                    
             #reindex the library design accordingly so that the downstream ops
             #can still be called with originally defined loc pointers
             design.truncate_and_reindex(loc)
@@ -760,7 +780,7 @@ class FastqParser(Handler):
         '''
         
         if fmt not in ('npy', 'csv', 'fasta'):
-            msg = f"<save_data> routine received invalid fmt argument. Acceted any of ('npy', 'csv', 'fasta'); received: {fmt}"
+            msg = f"<save_data> op received invalid fmt argument. Acceted any of ('npy', 'csv', 'fasta'); received: {fmt}"
             self.logger.error(msg)
             raise ValueError(msg)
         
@@ -802,4 +822,115 @@ class FastqParser(Handler):
                 
             return data
         return save_data    
+
+    def fastq_count_summary(self, where=None, top_n=None, fmt=None):
+        '''
+        For each sample in Data, counts the number of times each unique 
+        sequence is found in the dataset specified by 'where'. The results 
+        are written to a file in the analysis folder as specified by config
+        
+        Parameters:					  
+                   where: 'dna' or 'pep' to specify which dataset the op 
+                          should work on.
     
+                   top_n: if None, full summary will be created. If
+                          an int is passed, only top_n sequences (by count)
+                          will be written to a file.
+    
+                     fmt: the format of the output file. Supported values are
+                          'csv' and 'fasta'.					 
+                          						  							  
+        Returns:
+                Data object (no transformation)
+        '''
+        
+        self._where_check(where)
+        if fmt not in ('csv', 'fasta'):
+            msg = f"<fastq_count_summary> op received invalid fmt argument. Acceted any of ('csv', 'fasta'); received: {fmt}"
+            self.logger.error(msg)
+            raise ValueError(msg)
+            
+        if top_n is not None:
+            if not isinstance(top_n, (int, np.int)):
+                msg = f'<fastq_count_summary> op expected to receive parameter top_n as as int; received: {type(top_n)}'
+                self.logger.error(msg)  
+                raise ValueError(msg)
+    
+        def _writer(sample, og_ind, counts, fmt, path):
+            if fmt == 'csv':           
+                df = pd.DataFrame(columns=['Peptide', f'{where} count', 'DNA'])
+                df['Peptide'] = [''.join(x) for x in sample.pep[og_ind]]
+                df['DNA'] = [''.join(x) for x in sample.dna[og_ind]]
+                df[f'{where} count'] = counts
+                df.to_csv(path + '.csv', sep=',')
+                
+            if fmt == 'fasta':
+                arr = sample[where][og_ind]
+                arr_1d = [''.join(x) for x in arr]    
+                
+                with open(path + '.fasta', 'w') as f:
+                    for i,seq in enumerate(arr_1d):
+                        f.write(f'>seq_{i+1}_count_{counts[i]}\n')  
+                        f.write(f'{seq}\n')
+                return 
+        
+        def fastq_count_analysis(data):
+            
+            self._prepare_destinations(data, self.dirs.parser_out)
+            for sample in data:
+            
+                from clibas.misc import sorted_count
+                _, og_ind, counts = sorted_count(sample[where], top_n=top_n,
+                                                      return_index=True)
+                
+                destination = os.path.join(self.dirs.parser_out, sample.name)
+                fname = f'{sample.name}_{where}_count_summary'
+                path = os.path.join(destination, fname)
+                
+                _writer(sample, og_ind, counts, fmt, path)
+                                
+            return data
+        return fastq_count_analysis
+    
+    def library_design_match_analysis(self, where=None):
+        '''
+        For each sample in Data, compute the number of matches between the dataset 
+        specified by 'where' and the corresponding library templates. The results 
+        are written to a file in the analysis folder as specified by config
+        
+        In other words, summarize where dataset sequences come from (from which
+        libraries). The op could also be called "_internal_state_summary"
+        
+        Parameters:					  
+                   where: 'dna' or 'pep' to specify which dataset the op 
+                          should work on                        						  							  
+        Returns:
+                Data object (no transformation)
+        '''        
+    
+        self._where_check(where)
+        def library_design_match_summary(data):
+            
+            design = self._infer_design(where)
+            if not isinstance(data, Data):
+                msg = f'<library_design_match_analysis> op expected data as Data type; received: {type(data)}'
+                self.logger.error(msg)
+                raise TypeError(msg)
+                
+            #summarize straight into a pandas dataframe
+            sample_names = [sample.name for sample in data]
+            templates = [template.lib_seq for template in design]
+        
+            import pandas as pd
+            df = pd.DataFrame(index=sample_names, columns=templates)
+            
+            #all this op is: axis=0-wide sum of the internal states
+            for sample in data:
+                df.loc[sample.name] = np.sum(sample._internal_state, axis=0)
+                
+            fname = f'{self.exp_name}_by_template_breakdown.csv'
+            path = os.path.join(self.dirs.parser_out, fname)            
+            df.to_csv(path + '.csv', sep=',')
+    
+            return data
+        return library_design_match_summary    

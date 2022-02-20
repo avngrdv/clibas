@@ -56,6 +56,8 @@ class SequencingData:
         ax.set_xlim(0, 101)
         ax.set_xticks(np.arange(0, 125, 25))
         
+        ax.set_yscale('log')
+        
         ax.set_ylabel(f'{where} sequence count', fontsize=14)
         ax.set_xlabel('Sequence percentile', fontsize=14)
         ax.set_title(f'Sequence-level convergence of {where} dataset', fontsize=16)
@@ -90,7 +92,7 @@ class SequencingData:
         
         ax.set_xlabel('Sequence index', fontsize=30)
         ax.tick_params(axis='both', which='major',  labelsize=25)                                                 
-        ax.set_ylabel('Conservation, bits', fontsize=30)                     
+        ax.set_ylabel('Conservation, norm', fontsize=30)                     
     
         title = f'Token-wise sequence conservation plot for {where} dataset'
         ax.set_title(title, fontsize=34, y=1.04)
@@ -154,10 +156,10 @@ class SequencingData:
         plt.plot(avg-std, lw=1, c='#0091b5')
         ax.fill_between(np.arange(len(avg)), avg-std, avg+std, color='#0091b5', alpha=0.15)
     
-        ax.set_ylim(0, 53)
-        ax.set_xlim(0,len(avg))
-        ax.set_xticks(np.linspace(0, len(avg), 10))
-        ax.set_xticklabels(np.linspace(0, len(avg), 10, dtype=int))
+        ax.set_ylim(0, (avg + std).max() + 5)
+        ax.set_xlim(0, avg.size)
+        ax.set_xticks(np.linspace(0, avg.size, 10))
+        ax.set_xticklabels(np.linspace(1, avg.size+1, 10, dtype=int))
   
         ax.set_xlabel(f'{loc} region(s) index', fontsize=30)
         ax.tick_params(axis='both', which='major',  labelsize=25)                                               
@@ -175,55 +177,15 @@ class SequencingData:
 
 class Analysis:
     
-    def tSNE(embedding, sizes, labels, basename):
-        
-        import seaborn as sns
-
-        fig = plt.figure(figsize=(8, 8), dpi=300)
-        ax = fig.add_subplot(111)
-        plt.scatter(embedding[:,0][::-1], embedding[:,1][::-1], 
-                    alpha=0.8, 
-                    c=labels[::-1],
-                    cmap = sns.color_palette("mako", labels.max(), as_cmap=True),
-                    marker='o', edgecolors='none', 
-                    s=sizes[::-1])
-    
-        for cluster in labels:
-            if not cluster == -1:
-                x_coord = np.average(embedding[:,0][labels == cluster])
-                y_coord = np.average(embedding[:,1][labels == cluster])
-                plt.text(x=x_coord, 
-                         y=y_coord,
-                         s=f'{cluster+1}', 
-                         size=16,
-                         weight='bold',
-                         alpha=0.8,
-                         color='#c38928',
-                         horizontalalignment='center',
-                         verticalalignment='center')            
-    
-        ax.set_xlabel('tSNE1, scaled', fontsize=20)
-        ax.set_ylabel('tSNE2, scaled', fontsize=20)      
-        ax.tick_params(axis='both', which='major',  labelsize=16)                                               
-                   
-        title = 'tSNE clustering'
-        ax.set_title(title, fontsize=24, y=1.04)
-                                              
-        #save png and svg, and close the file
-        svg = basename + '.svg'
-        png = basename + '.png'
-        fig.savefig(svg, bbox_inches = 'tight')
-        fig.savefig(png, bbox_inches = 'tight')
-        plt.close()   
-
     def UMAP_HDBSCAN(Y,
                      labels,
                      C=None, 
                      sample_name=None, 
                      basename=None, 
                      show_annotations=False):
-        
-        
+
+        #matplotlib func; here mostly for posterity
+
         cmap = sns.color_palette("husl", labels.max(), as_cmap=True)
         fig = plt.figure(figsize=(8, 8), dpi=300)
         ax = fig.add_subplot(111)
@@ -289,7 +251,7 @@ class Analysis:
                               sample_name=None, 
                               basename=None):
         
-        fig = plt.figure(figsize=(6, 7), dpi=300)
+        fig = plt.figure(figsize=(7, 6), dpi=300)
         ax = fig.add_subplot(111)
         c = plt.pcolor(scores, cmap=sns.color_palette('mako', as_cmap=True))
         fig.colorbar(c, ax=ax)
@@ -317,6 +279,79 @@ class Analysis:
             plt.close()
 
         return
+
+
+class Miscellaneous:
+    
+    def single_linkage_dendrogram(link, labels=None, basename=None):
+        
+        from scipy.cluster.hierarchy import dendrogram
+        
+        dims = ((link.shape[0] + 1) * 0.3, 3)
+        fig = plt.figure(figsize=dims, dpi=300)
+        ax = fig.add_subplot(111)
+        dendrogram(link, labels=labels, p=50, ax=ax)
+        
+        ax.set_xlabel('Tokens', fontsize=16)
+        ax.set_ylabel('Height', fontsize=16)              
+        ax.tick_params(axis='both', which='major',  labelsize=14)                                               
+                   
+        title = 'Ward linkage dendrogram for the feature matrix'
+        ax.set_title(title, fontsize=18, y=1.02)    
+        
+        if basename is not None:
+            #save png and svg, and close the file
+            svg = basename + '.svg'
+            png = basename + '.png'
+            fig.savefig(svg, bbox_inches = 'tight')
+            fig.savefig(png, bbox_inches = 'tight')
+            plt.close()
+
+        return        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

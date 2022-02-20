@@ -4,7 +4,7 @@ Created on Tue Aug  3 20:27:57 2021
 @author: Alex Vinogradov
 """
 
-import os
+import os, importlib
 from clibas.baseclasses import (
                                   Logger,
                                   DirectoryTracker
@@ -53,7 +53,6 @@ class Dispatcher:
             #don't have to check individual attribs becase DirectoryTracker
             #can handle it by itself
             self.dirs = DirectoryTracker(self.config.TrackerConfig)
-        
         return
         
     def _parse_logger_config(self):
@@ -192,15 +191,25 @@ class Dispatcher:
                       }
         
         return
-        
+    
     def _config_to_dict(self, conf):        
         return dict((name, getattr(conf, name)) for name 
                     in dir(conf) if not name.startswith('__'))        
 
+    def _get_lib_params(self):
+        params = dict()
+        if hasattr(self, 'P_design'):
+            params.update({'P_design': self.P_design})
+    
+        if hasattr(self, 'D_design'):
+            params.update({'D_design': self.D_design})        
+
+        return params
+    
     def _dispatch_Pipeline(self):
         from clibas.pipelines import Pipeline
         return Pipeline(self.common)
-        
+    
     def _dispatch_FastqParser(self):
 
         from clibas.parsers import FastqParser
@@ -208,13 +217,9 @@ class Dispatcher:
         if hasattr(self.config, 'FastqParserConfig'):
             params = self._config_to_dict(self.config.FastqParserConfig)
             
-        if hasattr(self, 'P_design'):
-            params.update({'P_design': self.P_design})
-    
-        if hasattr(self, 'D_design'):
-            params.update({'D_design': self.D_design})
-        
+        params.update(self._get_lib_params())
         params.update(self.common)
+        
         return FastqParser(params)
 
     def _dispatch_DataPreprocessor(self):
@@ -228,20 +233,39 @@ class Dispatcher:
 
     def _dispatch_DataAnalysisTools(self):
         
-        from clibas.dataanalysis import DataAnalysisTools, HDBUMAP
+        from clibas.dataanalysis import DataAnalysisTools
         params = dict()
         if hasattr(self.config, 'DataAnalysisConfig'):
             params = self._config_to_dict(self.config.DataAnalysisConfig)
             
-        if hasattr(self, 'P_design'):
-            params.update({'P_design': self.P_design})
-    
-        if hasattr(self, 'D_design'):
-            params.update({'D_design': self.D_design})
+        params.update(self._get_lib_params())
+        params.update(self.common)        
         
-        params.update(self.common)
-        return HDBUMAP(params)
+        return DataAnalysisTools(params)
 
+    def _dispatch_generic(self, handler):
+       
+        handler_modules = ['parsers',
+                           'dataanalysis',
+                           'preprocessors',
+                           'pipelines'
+                           ]
+        
+        for module in handler_modules:
+            try:
+                m =  importlib.import_module(f'clibas.{module}')
+                obj = getattr(m, handler.__name__)
+                break
+            except:
+                obj = None
+            
+        if not obj: raise ImportError(f'<Dispatcher> could not set up {handler}')
+         
+        params = dict()
+        params.update(self._get_lib_params())
+        params.update(self.common)   
+        return obj(params)
+    
     def dispatch_handlers(self, handlers):
         '''
         The main class method. Takes a tuple of handlers and sets
@@ -263,8 +287,7 @@ class Dispatcher:
         mapping = {'Pipeline': self._dispatch_Pipeline,
                    'FastqParser': self._dispatch_FastqParser,
                    'DataAnalysisTools': self._dispatch_DataAnalysisTools,
-                   'HDBUMAP': self._dispatch_DataAnalysisTools,
-                   'DataPreprocessor': self._dispatch_DataPreprocessor,
+                   'DataPreprocessor': self._dispatch_DataPreprocessor
                   }
         
         h = list()
@@ -273,10 +296,12 @@ class Dispatcher:
             try:
                 h.append(mapping[handler.__name__]())
             except:
-                msg = f'Dispatcher failed to dispatch the following handler: {handler.__name__}. . .'
-                self.L.error(msg)
-                raise ValueError(msg)
-    
+                h.append(self._dispatch_generic(handler))
+                
+        for i in h:
+            msg = f'{i} was succesfully initialized'
+            self.L.info(msg)
+            
         return tuple(h)
     
 

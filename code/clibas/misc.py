@@ -253,7 +253,7 @@ def sample_from_template(template, n, monomers):
     return P    
     
     
-def sorted_count(arr, top_n=None):
+def sorted_count(arr, top_n=None, return_index=False):
     '''
     Handy utility to quickly count top_n most abundant entries in array arr.
 
@@ -262,17 +262,23 @@ def sorted_count(arr, top_n=None):
               top_n:    top_n entries in arr by count to return.
                         if None, the entire array with its counts is returned.
     
+       return_index:    if True, also return an array of indeces to reconstruct
+                        the original array
+    
         Returns:
             (arr, C):   a slice of the original array with its top_n most
                         common entries and the C array of corresponding counts
     '''
     
     if arr.ndim > 1:
-        X, C = np.unique(arr, return_counts=True, axis=0)
+        X, og_ind, C = np.unique(arr, return_counts=True, return_index=True, axis=0)
     else:
-        X, C = np.unique(arr, return_counts=True)
+        X, og_ind, C = np.unique(arr, return_counts=True, return_index=True)
        
     ind = np.argsort(C)[::-1][:top_n]
+    if return_index:
+        return (X[ind], og_ind[ind], C[ind])
+    
     return (X[ind], C[ind])
     
 def logistic_4_param(x, A, B, C, D):
@@ -282,96 +288,5 @@ def logistic_4_param(x, A, B, C, D):
     '''
     exp = np.exp(np.multiply(-C, x - D))
     return A + np.divide(B, 1 + exp)
-    
-    
-# def hopkins(data_frame, sampling_size=200):
-#     """Assess the clusterability of a dataset. A score between 0 and 1, 
-#     a score around 0.5 express no clusterability and a score tending to 0 
-#     express a high cluster tendency.
-    
-#     Examples
-#     --------
-#     >>> from sklearn import datasets
-#     >>> from pyclustertend import hopkins
-#     >>> X = datasets.load_iris().data
-#     >>> hopkins(X, 150)
-#     0.16
-    
-#     CODE COPIED FROM pyclustertend 
-#     (https://github.com/lachhebo/pyclustertend/blob/master/pyclustertend/hopkins.py)
-#     """
-
-#     import pandas as pd
-#     from sklearn.neighbors import BallTree
-
-#     def get_nearest_sample(df, uniformly_selected_observations):
-#         tree = BallTree(df, leaf_size=2)
-#         dist, _ = tree.query(uniformly_selected_observations, k=1)
-#         uniformly_df_distances_to_nearest_neighbours = dist
-#         return uniformly_df_distances_to_nearest_neighbours
-
-
-#     def simulate_df_with_same_variation(
-#         df, sampling_size
-#     ):
-#         max_data_frame = df.max()
-#         min_data_frame = df.min()
-#         uniformly_selected_values_0 = np.random.uniform(
-#             min_data_frame[0], max_data_frame[0], sampling_size
-#         )
-#         uniformly_selected_values_1 = np.random.uniform(
-#             min_data_frame[1], max_data_frame[1], sampling_size
-#         )
-#         uniformly_selected_observations = np.column_stack(
-#             (uniformly_selected_values_0, uniformly_selected_values_1)
-#         )
-#         if len(max_data_frame) >= 2:
-#             for i in range(2, len(max_data_frame)):
-#                 uniformly_selected_values_i = np.random.uniform(
-#                     min_data_frame[i], max_data_frame[i], sampling_size
-#                 )
-#                 to_stack = (uniformly_selected_observations, uniformly_selected_values_i)
-#                 uniformly_selected_observations = np.column_stack(to_stack)
-#         uniformly_selected_observations_df = pd.DataFrame(uniformly_selected_observations)
-#         return uniformly_selected_observations_df
-
-
-#     def get_distance_sample_to_nearest_neighbours(df, data_frame_sample):
-#         tree = BallTree(df, leaf_size=2)
-#         dist, _ = tree.query(data_frame_sample, k=2)
-#         data_frame_sample_distances_to_nearest_neighbours = dist[:, 1]
-#         return data_frame_sample_distances_to_nearest_neighbours
-
-
-#     def sample_observation_from_dataset(df, sampling_size):
-#         if sampling_size > df.shape[0]:
-#             raise Exception("The number of sample of sample is bigger than the shape of D")
-#         data_frame_sample = df.sample(n=sampling_size)
-#         return data_frame_sample
-
-#     if type(data_frame) == np.ndarray:
-#         data_frame = pd.DataFrame(data_frame)
-
-#     data_frame_sample = sample_observation_from_dataset(data_frame, sampling_size)
-
-#     sample_distances_to_nearest_neighbours = get_distance_sample_to_nearest_neighbours(
-#         data_frame, data_frame_sample
-#     )
-
-#     uniformly_selected_observations_df = simulate_df_with_same_variation(
-#         data_frame, sampling_size
-#     )
-
-#     df_distances_to_nearest_neighbours = get_nearest_sample(
-#         data_frame, uniformly_selected_observations_df
-#     )
-
-#     x = sum(sample_distances_to_nearest_neighbours)
-#     y = sum(df_distances_to_nearest_neighbours)
-
-#     if x + y == 0:
-#         raise Exception("The denominator of the hopkins statistics is null")
-
-#     return x / (x + y)[0]    
     
     

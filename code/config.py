@@ -36,29 +36,28 @@ class constants:
     
     #SMILES strings corresponding to all encoded amino acids;
     #sorted alphabetically by amino acid one-letter codes
-    aaSMILES = (   
-                'N[C@@H](C)C(=O)',           
-                'N[C@@H](CSCC(=O)N)C(=O)',  
-                'N[C@@H](CS)C(=O)',        
-                'N[C@@H](CC(=O)O)C(=O)',
-                'N[C@@H](CCC(=O)O)C(=O)',
-                'N[C@@H](Cc1ccccc1)C(=O)',
-                'NCC(=O)',
-                'N[C@@H](Cc1c[nH]cn1)C(=O)',
-                'N[C@@H]([C@H](CC)C)C(=O)',
-                'N[C@@H](CCCCN)C(=O)',        
-                'N[C@@H](CC(C)C)C(=O)',
-                'N[C@@H](CCSC)C(=O)',
-                'N[C@@H](CC(=O)N)C(=O)',
-                'O=C[C@@H]1CCCN1',  
-                'N[C@@H](CCC(=O)N)C(=O)',
-                'N[C@@H](CCCNC(=N)N)C(=O)',
-                'N[C@@H](CO)C(=O)',
-                'N[C@@H]([C@H](O)C)C(=O)',
-                'N[C@@H](C(C)C)C(=O)',
-                'N[C@@H](Cc1c[nH]c2c1cccc2)C(=O)',
-                'N[C@@H](Cc1ccc(O)cc1)C(=O)'
-              )
+    aa_SMILES = (   
+                 'N[C@@H](C)C(=O)',            
+                 'N[C@@H](CS)C(=O)',        
+                 'N[C@@H](CC(=O)O)C(=O)',
+                 'N[C@@H](CCC(=O)O)C(=O)',
+                 'N[C@@H](Cc1ccccc1)C(=O)',
+                 'NCC(=O)',
+                 'N[C@@H](Cc1c[nH]cn1)C(=O)',
+                 'N[C@@H]([C@H](CC)C)C(=O)',
+                 'N[C@@H](CCCCN)C(=O)',        
+                 'N[C@@H](CC(C)C)C(=O)',
+                 'N[C@@H](CCSC)C(=O)',
+                 'N[C@@H](CC(=O)N)C(=O)',
+                 'O=C[C@@H]1CCCN1',  
+                 'N[C@@H](CCC(=O)N)C(=O)',
+                 'N[C@@H](CCCNC(=N)N)C(=O)',
+                 'N[C@@H](CO)C(=O)',
+                 'N[C@@H]([C@H](O)C)C(=O)',
+                 'N[C@@H](C(C)C)C(=O)',
+                 'N[C@@H](Cc1c[nH]c2c1cccc2)C(=O)',
+                 'N[C@@H](Cc1ccc(O)cc1)C(=O)'
+                )
     
     #nucleotide complement table;
     #bases are represented by their ascii symbol numbers
@@ -145,13 +144,3 @@ class FastqParserConfig:
     #it will be used when translation is performed 
     #with force_translation=False flag
     utr5_seq = 'AGGAGAT......ATG'
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    

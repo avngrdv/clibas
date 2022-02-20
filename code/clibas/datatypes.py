@@ -232,7 +232,7 @@ class AnalysisSample(Sample):
         return self.X.ndim
 
     def __repr__(self):
-        return f'<TrainingSample object containing {len(self)} entries>'  
+        return f'<AnalysisSample {self.name} containing {len(self)} entries>'  
 
 class Data:
     '''
@@ -323,8 +323,18 @@ should have the same sample type!'
         return self.samples[item]
 
     def __repr__(self):
-        return f'<Data container holding {len(self)} samples>'
+        s = f'<Data container holding {len(self)} samples>:\n'
+        if self.size < 10:
+            for sample in self.samples:
+                s += f'{sample}\n'
+        else:
+            for sample in self.samples[:5]:
+                s += f'{sample}\n'     
+            s += '...\n'            
+            for sample in self.samples[-5:]:
+                s += f'{sample}\n'           
 
+        return s
 
     #TODO: this class will really benefit from implementing methods
     #to wrap around ops over individual samples
