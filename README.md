@@ -6,7 +6,7 @@ To get it going:
 
 1. Download the scripts
 2. Locate the environment file in clibas/environment 
-3. Use it to setup a fresh conda environment. From conda prompt, run:
+3. Use it to setup a fresh conda environment (spyder + jupyter will also be added). From conda prompt, run:
 	
 ```conda env create -f clibas_env.yml```
 
