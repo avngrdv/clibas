@@ -398,7 +398,35 @@ class QScoreAnalysis(Handler):
         return q_score_summary
            
 class HDBUMAP(Handler):
+    '''
+    Performs UMAP embedding of the dataset and clusters the results using 
+    HBSCAN clustering method. The object should be pimarily interacted with 
+    using its "analysis" method. Full hdbumap analysis involves the following 
+    steps:
     
+    1. Sample preprocessing. A list of peptide/DNA sequences is converted
+       to some numerical representation via featurization. Feature matrix 
+       specifies exactly what kind of repr is used for embedding. For
+       example, F=None will result in one hot encoding of the sequences, 
+       and F='varimax' (works only for peptides) will convert each amino
+       acid to an 8D vector encoding amino acid's biophysical parameters.
+       
+    2. UMAP and HDBSCAN hyperparameter inference. Hyperparameters for both
+       are a function of the sample size and composition.
+       
+    3. UMAP embedding (done with n_components=2) to get 2D coordinates of
+       sample's sequences in the embedded space.
+       
+    4. HDBSCAN clustering of sequences in the embedded space. Several
+       clustering hyperparameter configurations will be tested and the
+       one leading to the most robust clustering outcome will be chosen
+       to compute the final "labels" array.
+       
+    5. Report the results: plot embeddings, clustering outcomes, etc.
+    
+    See more details for self.analysis
+'''
+
     def __init__(self, *args):
         super(HDBUMAP, self).__init__(*args)
         self._validate_imports()
@@ -464,33 +492,53 @@ class HDBUMAP(Handler):
         return
         
     def _infer_umap_hyperparameters(self, size, purity):
-       #4PL params are heuristic
-       from clibas.misc import logistic_4_param
-       self.min_dist = logistic_4_param(purity, 0.01, 0.65, 20, 0.25)
-               
-       if size < 200:
-           self.n_neighbors = 5
-       
-       else:
-           n_neighbors_min = max(0.001 * size, 5)
-           n_neighbors_max = min(0.04 * size, 95)
-           self.n_neighbors = np.ceil(logistic_4_param(purity,
-                                                       n_neighbors_min,
-                                                       n_neighbors_max,
-                                                       15, 0.35
-                                                      )
+        '''
+        Two UMAP hyperparameters are optimized: min_dist and n_neighbors
+        
+        min_dist is a function of array's purity; datasets with low purity need 
+        to be repsented on a more "local" manifold is the gist.
+        
+        n_neighbors depends both on array's purity and on the total number
+        of sequences in array
+           
+        Parameters:
+                    size: number of sequences in the array to be embedded
+                  purity: array's purity
+        '''
+        #4PL params are heuristic
+        from clibas.misc import logistic_4_param
+        self.min_dist = logistic_4_param(purity, 0.01, 0.65, 20, 0.25)
+                
+        if size < 200:
+            self.n_neighbors = 5
+        
+        else:
+            n_neighbors_min = max(0.001 * size, 5)
+            n_neighbors_max = min(0.04 * size, 95)
+            self.n_neighbors = np.ceil(logistic_4_param(purity,
+                                                        n_neighbors_min,
+                                                        n_neighbors_max,
+                                                        15, 0.35
+                                                       )
                                       ).astype(np.int)
-       return
+        return
      
     def _infer_hdbscan_hyperparameters(self, size, purity):
         '''
-        use heuristic parametric curves to infer hyperparameters
-        parameter curves are a function of dataset purity: datasets with
-        low purity need to be repsented on a more "local" manifold is the
-        gist.
+        Two HDBSCAN hyperparameters are optimized: min_cluster_size and
+                                                   min_samples
         
-        arr: array to be embedded'''
-        
+        Both are the function of array's size and purity. Rather than coming
+        up with specific values, both hyperparams are held as ndarrays containing
+        up to 8 values each; during clustering a hyperparameter grid will be
+        constructed using these arrays and the best configuration will be
+        utilized to perform the actual clustering.
+           
+        Parameters:
+                    size: number of sequences in the array to be embedded
+                  purity: array's purity
+        '''
+         
         def hbscan_param_curve(heuristic, size, purity):
             return np.ceil(np.divide(heuristic * np.log2(size), 
                                      -np.log10(purity))
@@ -513,7 +561,30 @@ class HDBUMAP(Handler):
         return
 
     def _cluster(self, X, Y, alphabet=None):
-        
+        '''
+        Optimize and perform HDBSCAN clustering
+                                                   
+        Parameters:
+                    X: array of sequences to be clustered (original str repr)
+                    
+                    Y: UMAP embeddings of sequences in X; shape=(X.shape[0], 2)
+                    
+             alphabet: token alphabet for the datasets to be analyzed
+                       type: (tuple, list, ndarray)
+                     
+           Returns:         
+               
+               labels: ndarray (size=X.shape[0]) of cluster labels for sequences
+                       in X
+                       
+           cluster_hp: summary of clustering hyperparameter optimization;
+                       2D ndarray of shape=(min_cluster_size.size; 
+                                            min_samples.size)
+                       
+                       holding overall clustering scores for every combination
+                       of hyperparameters.
+        '''
+                 
         #Y: scaled umap embedding
         if not hasattr(self, 'min_cluster_size'):
             self.min_cluster_size = np.array([5])
@@ -558,9 +629,7 @@ class HDBUMAP(Handler):
         return hdb.labels_, cluster_hps
     
     def embed_and_cluster(self, arr, top_n=None, alphabet=None, F=None):
-        #TODO: is there a modular way to run all of the hyperparameter checks
-        #like in the analyze op?
-        
+
         X, C, pX = self._preprocess_arr(arr, top_n=top_n, alphabet=alphabet, F=F)
         self._initialize_umap()
         
@@ -606,7 +675,22 @@ class HDBUMAP(Handler):
         return df
 
     def entry_count_cluster(self, X, C, labels):
-    
+        '''
+        Make a pandas dataframe with three columns: entry, count, cluster
+        
+        Parameters:
+                    X: array of sequences (original str repr) (ndim=2)
+                    
+                    C: an array of counts for each sequence in X (ndim=1)
+                    
+               labels: an array of cluster assignments for each sequence in X 
+                       (ndim=1)
+                     
+           Returns:         
+               
+                  df: pandas dataframe   
+        '''
+        
         d = {'Entry': np.array([''.join(x) for x in X]),
              'Count': C,
              'Cluster': labels}         
@@ -623,8 +707,89 @@ class HDBUMAP(Handler):
                  alphabet=None,
                  return_modified=False,
                  single_manifold=False):
+
+        '''
+        Perform UMAP embedding of the dataset and clusters the results using 
+        HBSCAN clustering method. Involves the following 
+        steps:
+        
+        1. Sample preprocessing. A list of peptide/DNA sequences is converted
+           to some numerical representation via featurization. Feature matrix 
+           specifies exactly what kind of repr is used for embedding. For
+           example, F=None will result in one hot encoding of the sequences, 
+           and F='varimax' (works only for peptides) will convert each amino
+           acid to an 8D vector encoding amino acid's biophysical parameters.
+           
+        2. UMAP and HDBSCAN hyperparameter inference. Hyperparameters for both
+           are a function of the sample size and composition.
+           
+        3. UMAP embedding (done with n_components=2) to get 2D coordinates of
+           sample's sequences in the embedded space.
+           
+        4. HDBSCAN clustering of sequences in the embedded space. Several
+           clustering hyperparameter configurations will be tested and the
+           one leading to the most robust clustering outcome will be chosen
+           to compute the final "labels" array.
+           
+        5. Report the results: plot embeddings, clustering outcomes, etc.
+        
+        Parameters:
+            
+                top_n: int or None (default: None); top N sequences (by count) 
+                       to be analyzed. if None, the entire dataset will be 
+                       embedded and clustered. Note that if the dataset is large
+                       this can take a long time. Recommended: 100 - 5000
+                    
+               where:  str or None (default: None) 'dna' or 'pep' to specify 
+                       which dataset the op should work on. Only set if the op
+                       is used as part of pipeline.
+                    
+             alphabet: tuple, list, ndarray or None; default: None
+                       token alphabet for the datasets to be analyzed. if None,
+                       the method will attempt to infer the alphabet based on
+                       the 'where' keyword. If both are None, an error is raised.
+                       
+                   F:  str, ndarray or None; default: None
+                       Feature matrix for data preprocessing. If None, one-hot
+                       encodings will be utilized. A 2D ndarray can be passed
+                       to specify the matrix explicitly. In this case, 
+                       F.shape[0] = len(alphabet) is the necessary requirement.
+                       
+                       Several str values are supported: for example, 'pep_ECFP3',
+                       'pep_ECFP4', 'pep_SMILES', 'varimax'. See feature matrix
+                       documentation for more information 
+                       (clibas.featurization.FeatureMatrix)
+                       
+       cluster_fasta:  bool; default: False. If set, fasta files for individual
+                       clusters will be created.
                 
-        #TODO: document
+     return_modified:  bool; default: False. If set, the op will return
+                       modified data (includes top N entries for each sample,
+                       UMAP embeddings, clustering labels, etc). If False, the 
+                       op returns original data.
+    
+     single_manifold:  bool; default: False. By default, for data consisting 
+                       of several samples, independent embeddings are performed.
+                       Because UMAP is stochastic, two embeddings cannot be 
+                       directly compared to each other. If set True, all samples
+                       in data will be embedded to a single common manifold.
+
+           Returns:         
+               
+                Data:  data as Data object
+                
+                       Additionally, several files will be created: for each
+                       analyzed sample, umap hdbscan dashboard (an html file)
+                       will be created to enable interactive expolation of the 
+                       data. If single_manifold is True, an additional .html
+                       file showing different sample embeddings side by side
+                       will also be created. 
+                            
+                       Clustering outcomes will be summarized separately in 
+                       two .csv files, and a .csv/.png figure will be created 
+                       to show the results of clustering optimization.
+    '''
+         
         if top_n is not None:
             if not isinstance(top_n, int):
                 msg = f'<HDBUMAP.analyze> op expected to receive parameter top_n as int; received: {type(top_n)}'
@@ -721,7 +886,9 @@ class HDBUMAP(Handler):
                                                        sample_name=sample.name,
                                                        basename=basename
                                                        )                
+                
                 #plot the results
+                #maybe worth it to have a matplotlib fallback if holoviews cannot be imported
                 from clibas.hv_plotters import hdbumap_analysis_dashboard
                 fname = os.path.join(destination, 
                                         f'{sample.name}_{where_str}_umap_hdbscan_dashboard')

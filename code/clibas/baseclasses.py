@@ -151,13 +151,11 @@ class Handler:
         If no logger is passed to a data handler, a default Logger 
         object will be invoked. The default logger is silent. 
         '''
-
         if not hasattr(self, 'logger'):
             self.logger = Logger().logger
     
         if self.logger is None:
             self.logger = Logger().logger
-            
         return
     
     def __tracker_fallback(self):
@@ -165,47 +163,32 @@ class Handler:
         If no DirectorTracker object was passed to a handler, a default
         tracker will be invoked (everything in the cwd)
         '''        
-        
         if not hasattr(self, 'dirs'):
             self.dirs = DirectoryTracker()
-            pass
-        
         return
 
     def _validate_designs(self):
-        
+
         if hasattr(self, 'P_design') and hasattr(self, 'D_design'):
-            
             if not len(self.P_design) == len(self.D_design):
                 msg = 'Peptide and DNA library designs must contains the same number of templates; cannot inialize FastqProcessor. . .'
                 self.logger.error(msg)
                 raise ValueError(msg)
-
-        #actually, let's not require a design to instantiate parser:
-        #maybe someone just wants to load the data and run translation
-        # if not hasattr(self, 'P_design') and not hasattr(self, 'D_design'):                  
-        #     msg = 'Either DNA or peptide library designs need to be specified for <FastqParser> to operate'
-        #     self.logger.error(msg)
-        #     raise ValueError(msg)
         return
     
     def _validate_constants(self):
-        #but the constants do appear necessary: can't even run translation otherwise
         if not hasattr(self, 'constants'):
             msg = 'FastqParser requires constants for setup. . .'
             self.logger.error(msg)
             raise ValueError(msg)
-            
         return
     
     def _transform_check(self, sample, func):
         if not sample.get_ndims() == 2:
             raise ValueError(f'Sample {sample.name} holds arrays of unsupported dimensionality for {func} op. Expected: arrays of ndims=2, got: ndims={sample.get_ndims()}')
-        
         return
     
     def _where_check(self, where):
-
         if where == 'pep':
             if not hasattr(self, 'P_design'):
                 msg = "Peptide library design not set: cannot analyze peptide datasets without unspecifying a library design."
@@ -234,7 +217,6 @@ class Handler:
     def _infer_alphabet(self, where, alphabet):
         
         #if alphabet is specified: override any implied specifications
-        #by the where argument
         if isinstance(alphabet, (list, tuple)):
             return alphabet
         
@@ -277,9 +259,8 @@ class Handler:
         return    
 
     def _L_summary(self, arr):
-
         #infer what the pad token is
-        pad = np.zeros(1, dtype=arr.dtype)[0]
+        pad = arr.dtype.type()
         
         #fetch the indexes where dna/pep length == designed
         return np.sum(arr != pad, axis=1)
@@ -302,17 +283,11 @@ class Handler:
     def _recast_data(self, maybe_arr, where=None):
         
         if not isinstance(maybe_arr, Data):
-            
             if isinstance(maybe_arr, AnalysisSample):
                 return Data([maybe_arr])
-            try:
+            else:
                 return Data([AnalysisSample(X=maybe_arr)])
-            except:
-                msg = f'{self} did not understand input type. \
-Expected data as type: Data object or an array; received: {type(maybe_arr)}'
-                self.logger.error(msg)
-                raise TypeError(msg)
-
+            
         else:
             if maybe_arr.dtype != AnalysisSample:
                 try:
@@ -323,8 +298,7 @@ Expected data as type: Data object or an array; received: {type(maybe_arr)}'
                 except:
                     msg = f'{self} could not recast {where} samples in data. . .'
                     self.logger.error(msg)
-                    raise ValueError(msg)
-                    
+                    raise ValueError(msg)         
         return maybe_arr
 
     def _restack_and_repad(self, data):

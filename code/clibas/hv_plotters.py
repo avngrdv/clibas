@@ -11,12 +11,10 @@ but for now hv is kept separate for cleanliness.
 """
 
 import numpy as np
-
 import holoviews as hv
 from bokeh.models import HoverTool
 import seaborn as sns
 hv.extension('bokeh')
-
 
 def _get_heatmap(X, labels, cluster=None, alphabet=None):
     
@@ -34,7 +32,6 @@ def _get_heatmap(X, labels, cluster=None, alphabet=None):
     
     return hmap
 
-
 def _get_palette(clusters, bw=False):
     
     n_clusters = np.unique(clusters).size
@@ -47,7 +44,6 @@ def _get_palette(clusters, bw=False):
         palette = ['#323232' for c in palette]
         
     return palette
-
 
 def _XYC_unpack(d):
     umap1 = d['Y'][:,0]
@@ -238,7 +234,7 @@ def hv_cluster_freqs(freq_heat_map, alphabet=None, x_dim_size=None):
                 )
     
     hm = hm.opts(height=600,
-                 width=40 * x_dim_size, 
+                 width=35 * x_dim_size, 
                  colorbar=True, 
                  colorbar_opts=cbar_opts,
                  fontsize={'title': 9}
@@ -297,7 +293,6 @@ def hdbumap_holomap_triplet(d,
                                                   lims=scs_lims
                                                  )
                })
-
 
     for i in clusters:
         max_dig = len(str(clusters.max()))

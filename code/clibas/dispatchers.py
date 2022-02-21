@@ -11,9 +11,6 @@ from clibas.baseclasses import (
 )
 
 
-#stop codon has to be reserved. if you want to read through stop codons,
-#edit the translation table and encode relevant stops as something other 
-#than the symbols below! 
 _reserved_aa_names = (
                       '_',
                       '+', 
@@ -79,7 +76,7 @@ class Dispatcher:
         #setup constants: some missing attribs might be inferred, but
         #at least something needs to be present
         if not hasattr(self.config, 'constants'):    
-            msg = 'Dispatcher: config is missing minimal definitions of constants. Aborting. . . '
+            msg = '<Dispatcher>: config is missing the minimal definitions of constants. Aborting. . . '
             self.L.error(msg)
             raise ValueError(msg)
                     
@@ -103,15 +100,14 @@ class Dispatcher:
                 self.constants.bases = tuple(sorted(set(
                     
                                 ''.join(self.constants.translation_table.keys())))
-                     )        
-        
+                      )        
         return
         
     def _parse_lib_design_config(self):
         
         from clibas.lib_design import LibraryDesign
         if not hasattr(self.config, 'LibaryDesigns'):
-            msg = 'Dispatcher: config has not specified any library designs. . .'
+            msg = '<Dispatcher>: config has not specified any library designs. . .'
             self.L.warning(msg)
             return
         
@@ -119,8 +115,7 @@ class Dispatcher:
         if hasattr(self.config.LibaryDesigns, 'pep_templates') and \
            hasattr(self.config.LibaryDesigns, 'pep_monomers'):
             
-            if hasattr(self.constants, 'aas'):
-                
+            if hasattr(self.constants, 'aas'):             
                 self.P_design = LibraryDesign(
                                               templates=self.config.LibaryDesigns.pep_templates,
                                               monomers=self.config.LibaryDesigns.pep_monomers,
@@ -131,7 +126,6 @@ class Dispatcher:
                 msg = 'Dispatcher: cannot setup a peptide library design without amino acid alphabet specification. . .'
                 self.L.error(msg)
                 raise ValueError(msg)
-                
                 
         #if only of the two necessary atrributes is present, raise
         #note that if both are absent, it's OK
@@ -153,7 +147,6 @@ class Dispatcher:
                                               lib_type='dna',
                                               val_monomer=self.constants.bases
                                              )
-                
             else:
                 msg = 'Dispatcher: cannot setup a DNA library design without nucleotide alphabet specification. . .'
                 self.L.error(msg)
@@ -173,7 +166,6 @@ class Dispatcher:
         
         #check that all necessary config params are in place, one by one (tedious)
         #if not, fallback to some innocuous defaults where possible
-        
         if hasattr(self.config, 'experiment'):
             self.experiment = self.config.experiment
         else: 
@@ -189,7 +181,6 @@ class Dispatcher:
                        'exp_name': self.experiment,
                        'constants': self.constants
                       }
-        
         return
     
     def _config_to_dict(self, conf):        
@@ -219,7 +210,6 @@ class Dispatcher:
             
         params.update(self._get_lib_params())
         params.update(self.common)
-        
         return FastqParser(params)
 
     def _dispatch_DataPreprocessor(self):
@@ -240,7 +230,6 @@ class Dispatcher:
             
         params.update(self._get_lib_params())
         params.update(self.common)        
-        
         return DataAnalysisTools(params)
 
     def _dispatch_generic(self, handler):
@@ -249,7 +238,7 @@ class Dispatcher:
                            'dataanalysis',
                            'preprocessors',
                            'pipelines'
-                           ]
+                          ]
         
         for module in handler_modules:
             try:
@@ -263,25 +252,25 @@ class Dispatcher:
          
         params = dict()
         params.update(self._get_lib_params())
-        params.update(self.common)   
+        params.update(self.common)
         return obj(params)
     
-    def dispatch_handlers(self, handlers):
+    def dispatch(self, handlers):
         '''
-        The main class method. Takes a tuple of handlers and sets
-        them up in a coordinated way.
+        Take a tuple of handlers and initialize each by giving 
+        them relevant configs params. Also makes sure that the
+        information about file directories and logger is shared
+        between all initialized objects
         
         Parameters
         ----------
-        handlers : a tuple of handlers to be instantiated.
-                    ex: (Pipeline, FastqParser, DataPreprocessor)
+        handlers : a tuple of handlers to be instantiated or an individual
+                   handler
+                   ex: (Pipeline, FastqParser, DataPreprocessor)
 
         Returns
         -------
-        a tuple of instantiated handlers in the same order.
-        all meta parameters for individual handlers are fetched
-        from the config file. logger and directory tracker are 
-        shared between all instances for coordination.
+        A tuple of initialized handler instances
         '''
         
         mapping = {'Pipeline': self._dispatch_Pipeline,
@@ -290,9 +279,15 @@ class Dispatcher:
                    'DataPreprocessor': self._dispatch_DataPreprocessor
                   }
         
+        #make sure either individual handlers or tuples of thereof work
+        handlers = [handlers]
+        try:
+            handlers = [item for sublist in handlers for item in sublist]
+        except:
+            pass
+     
         h = list()
         for handler in handlers:
-            
             try:
                 h.append(mapping[handler.__name__]())
             except:

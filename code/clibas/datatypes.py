@@ -81,7 +81,6 @@ class Sample:
         
         if not isinstance(self.name, str):
             raise ValueError(f'Sample name {self.name} was not understood. . .')        
-
         return
 
     def _validate_size(self):
@@ -136,8 +135,7 @@ class Sample:
                 for i, x in enumerate(arr):
                     arr_2d[i,:len(x)] = list(x) 
             
-                setattr(self, item, arr_2d)
-                
+                setattr(self, item, arr_2d)               
         return
 
     def drop(self, item):
@@ -191,8 +189,6 @@ class SequencingSample(Sample):
         return
  
     def transform_all(self):
-        
-        #this is so much cleaner with the Sample basetype!
         self.transform('pep')
         self.transform('dna')
         self.transform('Q')

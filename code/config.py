@@ -2,7 +2,8 @@ experiment = 'unnamed_experiment'
 
 class constants:
     '''
-    Star symbol (*) is reserved for stop codons.
+    Star symbol (*) is internally reserved for stop codons that terminate
+    translation.
     
     Plus and underscore symbols (+ and _) are internally reserved tokens.
     Numerals (1234567890) are internally reserved for library design 
@@ -10,8 +11,13 @@ class constants:
     encode amino acids.
     
     Other symbols are OK.
-    '''
     
+    If reading through stop codons is desired (returning sequences containing
+    stop codons in the middle), edit the translation table below to encode
+    the relevant codons as something other than (*)! The library designs will
+    also need to be edited to include new stop codon encodings as possible
+    monomers.
+    '''    
     translation_table = {
                             'ATA':'I', 'ATC':'I', 'ATT':'I', 'ATG':'M',
                             'ACA':'T', 'ACC':'T', 'ACG':'T', 'ACT':'T',
@@ -30,12 +36,10 @@ class constants:
                             'TAC':'Y', 'TAT':'Y', 'TAA':'*', 'TAG':'*',
                             'TGC':'C', 'TGT':'C', 'TGA':'*', 'TGG':'W',
                        }
-
-
-    bases = ('T', 'C', 'A', 'G')
     
     #SMILES strings corresponding to all encoded amino acids;
-    #sorted alphabetically by amino acid one-letter codes
+    #sorted alphabetically by amino acid one-letter codes; used
+    #to create ECFP feature matrices
     aa_SMILES = (   
                  'N[C@@H](C)C(=O)',            
                  'N[C@@H](CS)C(=O)',        
@@ -65,7 +69,8 @@ class constants:
                         67: 71,
                         84: 65, 
                         71: 67, 
-                        78: 78}
+                        78: 78
+                       }
           
 class LibaryDesigns:
         
@@ -135,12 +140,11 @@ class LoggerConfig:
     #write logs to file
     log_to_file = True
 
-    #logger level; accepted any of ('INFO', 'WARNING', 'ERROR')
-    level = 'INFO'    
+    #logger level; accepted any of ('DEBUG', INFO', 'WARNING', 'ERROR')
+    level = 'INFO'
     
 class FastqParserConfig:
     
-    #a RE pattern that has to match in order to initiate the orf
-    #it will be used when translation is performed 
-    #with force_translation=False flag
+    #a regex pattern that has to match in order to initiate the ORF
+    #used when translation is performed as force_translation=False
     utr5_seq = 'AGGAGAT......ATG'

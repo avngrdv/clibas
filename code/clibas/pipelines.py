@@ -106,8 +106,7 @@ class Pipeline(Handler):
             self.que.append(func)
             
         msg = f'{len(ops)} ops appended to pipeline; current queue size: {len(self.que)}'
-        self.logger.info(msg)
-        
+        self.logger.info(msg)        
         return        
 
     def run(self, data=None, save_summary=True):

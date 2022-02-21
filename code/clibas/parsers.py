@@ -30,7 +30,6 @@ class FastqParser(Handler):
     
         self._validate_designs()
         self._validate_constants()
-        # self._on_completion()
         return
         
     def __repr__(self):
@@ -507,16 +506,14 @@ class FastqParser(Handler):
         Returns:
                 Transformed Data object without dropped datasets
         '''
-        if where not in ('pep', 'dna', 'q'):
-            msg = f"Invalid argument passed to <drop_dataset> op. Expected where = any of ('pep', 'dna', 'q'); got: {where}"
+        if where not in ('pep', 'dna', 'Q'):
+            msg = f"Invalid argument passed to <drop_dataset> op. Expected where = any of ('pep', 'dna', 'Q'); received: {where}"
             self.logger.error(msg)
             raise ValueError(msg)
         
-        def drop_dataset(data):
-            
+        def drop_dataset(data):            
             for sample in data:
                 sample.drop(where)
-                
             return data
         return drop_dataset
 
@@ -637,9 +634,9 @@ class FastqParser(Handler):
     
     def unpad(self):
         '''
-        For each sample in Data, unpads the D, Q, P arrays. For each array, removes 
-    	the columns where every value is a padding token. See documentation on Data 
-        objects for more information.
+        For each sample in Data, unpads the dna, pep and Q arrays. For each 
+        array, removes the columns where every value is a padding token. 
+        See documentation on Data objects for more information.
 
         Parameters:
                 None	
@@ -823,7 +820,7 @@ class FastqParser(Handler):
             return data
         return save_data    
 
-    def fastq_count_summary(self, where=None, top_n=None, fmt=None):
+    def count_summary(self, where=None, top_n=None, fmt=None):
         '''
         For each sample in Data, counts the number of times each unique 
         sequence is found in the dataset specified by 'where'. The results 
@@ -874,15 +871,16 @@ class FastqParser(Handler):
                         f.write(f'{seq}\n')
                 return 
         
-        def fastq_count_analysis(data):
+        def fastq_count_summary(data):
             
             self._prepare_destinations(data, self.dirs.parser_out)
             for sample in data:
             
                 from clibas.misc import sorted_count
-                _, og_ind, counts = sorted_count(sample[where], top_n=top_n,
-                                                      return_index=True)
-                
+                _, og_ind, counts = sorted_count(sample[where],
+                                                 top_n=top_n,
+                                                 return_index=True
+                                                )
                 destination = os.path.join(self.dirs.parser_out, sample.name)
                 fname = f'{sample.name}_{where}_count_summary'
                 path = os.path.join(destination, fname)
@@ -890,9 +888,9 @@ class FastqParser(Handler):
                 _writer(sample, og_ind, counts, fmt, path)
                                 
             return data
-        return fastq_count_analysis
+        return fastq_count_summary
     
-    def library_design_match_analysis(self, where=None):
+    def library_design_match(self, where=None):
         '''
         For each sample in Data, compute the number of matches between the dataset 
         specified by 'where' and the corresponding library templates. The results 
@@ -909,7 +907,7 @@ class FastqParser(Handler):
         '''        
     
         self._where_check(where)
-        def library_design_match_summary(data):
+        def library_design_summary(data):
             
             design = self._infer_design(where)
             if not isinstance(data, Data):
@@ -933,4 +931,4 @@ class FastqParser(Handler):
             df.to_csv(path + '.csv', sep=',')
     
             return data
-        return library_design_match_summary    
+        return library_design_summary    
