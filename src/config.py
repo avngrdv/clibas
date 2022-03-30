@@ -1,4 +1,4 @@
-experiment = 'unnamed_experiment'
+experiment = '737_satmut'
 
 class constants:
     '''
@@ -76,48 +76,26 @@ class LibaryDesigns:
         
     #DNA library design parameters     
     dna_templates = [
-                     'TAATACGACTCACTATAGGGTTAACTTTAAGAAGGAGATATACATATG112112112112TGCGGCAGCGGCAGCGGCAGCTAGGACGGGGGGCGGAAA',
-                     'TAATACGACTCACTATAGGGTTAACTTTAAGAAGGAGATATACATATG112112112112112TGCGGCAGCGGCAGCGGCAGCTAGGACGGGGGGCGGAAA',
-                     'TAATACGACTCACTATAGGGTTAACTTTAAGAAGGAGATATACATATG112112112112112112TGCGGCAGCGGCAGCGGCAGCTAGGACGGGGGGCGGAAA',
-                     'TAATACGACTCACTATAGGGTTAACTTTAAGAAGGAGATATACATATG112112112112112112112TGCGGCAGCGGCAGCGGCAGCTAGGACGGGGGGCGGAAA',
-                     'TAATACGACTCACTATAGGGTTAACTTTAAGAAGGAGATATACATATG112112112112112112112112TGCGGCAGCGGCAGCGGCAGCTAGGACGGGGGGCGGAAA',
-                     'TAATACGACTCACTATAGGGTTAACTTTAAGAAGGAGATATACATATG112112112112112112112112112TGCGGCAGCGGCAGCGGCAGCTAGGACGGGGGGCGGAAA',
-                     'TAATACGACTCACTATAGGGTTAACTTTAAGAAGGAGATATACATATG112112112112112112112112112112TGCGGCAGCGGCAGCGGCAGCTAGGACGGGGGGCGGAAA',
-                     'TAATACGACTCACTATAGGGTTAACTTTAAGAAGGAGATATACATATG112112112112112112112112112112112TGCGGCAGCGGCAGCGGCAGCTAGGACGGGGGGCGGAAA',
-                     'TAATACGACTCACTATAGGGTTAACTTTAAGAAGGAGATATACATATG112112112112112112112112112112112112TGCGGCAGCGGCAGCGGCAGCTAGGACGGGGGGCGGAAA',
-                     'TAATACGACTCACTATAGGGTTAACTTTAAGAAGGAGATATACATATG112112112112112112112112112112112112112TGCGGCAGCGGCAGCGGCAGCTAGGACGGGGGGCGGAAA',
-                     'TAATACGACTCACTATAGGGTTAACTTTAAGAAGGAGATATACATATG112112112112112112112112112112112112112112TGCGGCAGCGGCAGCGGCAGCTAGGACGGGGGGCGGAAA',
-                     'TAATACGACTCACTATAGGGTTAACTTTAAGAAGGAGATATACATATG112112112112112112112112112112112112112112112TGCGGCAGCGGCAGCGGCAGCTAGGACGGGGGGCGGAAA',
+                      'ttgccggaaaatggg121tcatggaccattaggacccgtgggaggatagctacttgc312agttcttgcgctcaaccctacccatacgacgtgcctgactatgcaggtgcaggatagctaaggacggggggcggaaa'.upper(),
                     ]
 
     dna_monomers = {
-                    1: ('A', 'G', 'T', 'C'),
-                    2: ('G', 'T'),
-                   }
+                    1: ('G'),
+                    2: ('C'),
+                    3: ('A')
+                    }
                     
     #peptide library design parameters
     pep_templates = [
-                     '211113GSGSGS',
-                     '2111113GSGSGS',
-                     '21111113GSGSGS',
-                     '211111113GSGSGS',
-                     '2111111113GSGSGS',
-                     '21111111113GSGSGS',
-                     '211111111113GSGSGS',
-                     '2111111111113GSGSGS',
-                     '21111111111113GSGSGS',
-                     '211111111111113GSGSGS',
-                     '2111111111111113GSGSGS',
-                     '21111111111111113GSGSGS',
+                     'LPENG1SWTIRTRGRIATC22231QPYPYDVPDYAGAG'
                     ]
             
     pep_monomers = {
-                    1: ('A', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'K', 
-                        'L', 'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'V', 'W', 'Y'),
-                    2: ('M'),
+                    1: ('A'),
+                    2: ('S'),
                     3: ('C')
                    }
-    
+
 class TrackerConfig:
     
     #directory holding sequencing data files (fastq or fastq.gz)

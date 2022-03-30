@@ -194,11 +194,14 @@ class SequencingSample(Sample):
         self.transform('Q')
         
         #fix up the Q score arrays
-        encoding = [''] + [chr(i) for i in range(128)]
-        sort_idx = np.argsort(encoding)
-        Q = np.searchsorted(encoding, self.Q, sorter = sort_idx) - 34
-        Q[Q == -34] = 0
-        self.Q = Q
+        if self.Q.size > 0:
+            
+            encoding = [''] + [chr(i) for i in range(128)]
+            sort_idx = np.argsort(encoding)
+            Q = np.searchsorted(encoding, self.Q, sorter = sort_idx) - 34
+            Q[Q == -34] = 0
+            self.Q = Q
+            
         return
         
     def get_ndims(self):
