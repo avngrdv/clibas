@@ -1,7 +1,9 @@
-<picture>
-  <source srcset="/docs/source/_static/clibas_logo_dark_v1.png" media="(prefers-color-scheme: dark)">
-  <img src="/docs/source/_static/clibas_logo_v1.png" alt="clibas logo">
-</picture>
+<div align="center">
+  <picture>
+    <source srcset="/docs/source/_static/clibas_logo_dark_v1.png" media="(prefers-color-scheme: dark)">
+    <img src="/docs/source/_static/clibas_logo_v1.png" alt="clibas logo" width="50%">
+  </picture>
+</div>
 
 # clibas
 
@@ -37,7 +39,7 @@ Any contributions – code, feature requests, jupyter notebooks – are welcome!
 Project on PyPI: link tbd \
 Documentation: link tbd \
 Accompanying paper: link tbd \
-<a href="https://vinogradov.science/" target="_blank">Vinogradov Lab at NUS</a>
+<a href="https://vinogradov.science/" target="_blank" rel="noopener noreferrer">Vinogradov Lab at NUS</a>
 
 
 ## Citation
