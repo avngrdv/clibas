@@ -272,7 +272,13 @@ class Analysis:
     """
 
     def UMAP_HDBSCAN(
-        Y, labels, C=None, sample_name=None, basename=None, total_reads=None, show_annotations=False
+        Y,
+        labels,
+        C=None,
+        sample_name=None,
+        basename=None,
+        total_reads=None,
+        show_annotations=False,
     ):
         """
         Plot UMAP embedding with HDBSCAN cluster assignments.
@@ -286,7 +292,7 @@ class Analysis:
             labels (ndarray): Cluster assignments (0 for noise).
 
             C (ndarray, optional): Sequence counts for sizing points.
-            
+
             total_reads(int, optional): Total number of reads in the sample.
 
             sample_name (str, optional): Sample name for title.
@@ -303,18 +309,17 @@ class Analysis:
         fig = plt.figure(figsize=(8, 8), dpi=300)
         ax = fig.add_subplot(111)
 
-
         # Replicate _compute_marker_size logic exactly
         min_px = 2
         max_px = 75
         scaling = 0.33
-        
+
         if C is not None:
             if total_reads is None:
-                total_reads = C.sum()  #fallback
+                total_reads = C.sum()  # fallback
             f = C / total_reads
             sizes = min_px + (max_px - min_px) * np.power(f, scaling)
-            sizes = sizes ** 2
+            sizes = sizes**2
         else:
             sizes = 5500 * np.power(np.divide(1, Y.shape[0]), 0.53)
 
@@ -505,82 +510,50 @@ class Analysis:
         _save_figs(logo.fig, basename=basename)
         return
 
+
 class Miscellaneous:
-    
     def single_linkage_dendrogram(link, labels=None, basename=None):
         """
-    Plot hierarchical clustering dendrogram using single linkage.
+        Plot hierarchical clustering dendrogram using single linkage.
 
-    Generates a dendrogram visualization from a linkage matrix, typically
-    derived from hierarchical clustering (e.g., Ward linkage). Displays
-    hierarchical relationships among tokens or sequence features.
+        Generates a dendrogram visualization from a linkage matrix, typically
+        derived from hierarchical clustering (e.g., Ward linkage). Displays
+        hierarchical relationships among tokens or sequence features.
 
-    Args:
-        link (ndarray): Linkage matrix from hierarchical clustering.
+        Args:
+            link (ndarray): Linkage matrix from hierarchical clustering.
 
-        labels (list, optional): Labels for the dendrogram leaves.
+            labels (list, optional): Labels for the dendrogram leaves.
 
-        basename (str, optional): Output path without extension for saving plots.
+            basename (str, optional): Output path without extension for saving plots.
 
-    Example:
-        >>> from scipy.cluster.hierarchy import linkage
-        >>> Z = linkage(X, method='ward')
-        >>> Miscellaneous.single_linkage_dendrogram(Z, labels=feature_names,
-        ...                                         basename='output/dendrogram')
+        Example:
+            >>> from scipy.cluster.hierarchy import linkage
+            >>> Z = linkage(X, method='ward')
+            >>> Miscellaneous.single_linkage_dendrogram(Z, labels=feature_names,
+            ...                                         basename='output/dendrogram')
         """
-        
+
         from scipy.cluster.hierarchy import dendrogram
-        
+
         dims = ((link.shape[0] + 1) * 0.3, 3)
         fig = plt.figure(figsize=dims, dpi=300)
         ax = fig.add_subplot(111)
         dendrogram(link, labels=labels, p=50, ax=ax)
-        
-        ax.set_xlabel('Tokens', fontsize=16)
-        ax.set_ylabel('Height', fontsize=16)              
-        ax.tick_params(axis='both', which='major',  labelsize=14)                                               
-                   
-        title = 'Ward linkage dendrogram for the feature matrix'
-        ax.set_title(title, fontsize=18, y=1.02)    
-        
+
+        ax.set_xlabel("Tokens", fontsize=16)
+        ax.set_ylabel("Height", fontsize=16)
+        ax.tick_params(axis="both", which="major", labelsize=14)
+
+        title = "Ward linkage dendrogram for the feature matrix"
+        ax.set_title(title, fontsize=18, y=1.02)
+
         if basename is not None:
-            #save png and svg, and close the file
-            svg = basename + '.svg'
-            png = basename + '.png'
-            fig.savefig(svg, bbox_inches = 'tight')
-            fig.savefig(png, bbox_inches = 'tight')
+            # save png and svg, and close the file
+            svg = basename + ".svg"
+            png = basename + ".png"
+            fig.savefig(svg, bbox_inches="tight")
+            fig.savefig(png, bbox_inches="tight")
             plt.close()
 
-        return  
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        return

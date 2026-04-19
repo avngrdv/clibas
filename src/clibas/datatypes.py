@@ -7,8 +7,10 @@ maintain data integrity and enable consistent transformations throughout
 processing workflows.
 """
 
-import numpy as np
 import copy
+
+import numpy as np
+
 
 class Sample:
     """
@@ -148,27 +150,27 @@ class Sample:
     def ind_filter(self, ind, in_place=True, new_name=None):
         """
         Filter sample arrays using boolean or integer indexing.
-    
-        Applies the same indexing operation to all array attributes 
-        simultaneously, maintaining consistency across datasets. Can operate 
-        in-place or return a new filtered copy. Useful for pipeline operations 
+
+        Applies the same indexing operation to all array attributes
+        simultaneously, maintaining consistency across datasets. Can operate
+        in-place or return a new filtered copy. Useful for pipeline operations
         or subset selection.
-    
+
         Args:
             ind (array-like): Boolean mask or integer indices for filtering.
-            in_place (bool, optional): If True, modifies the current sample. 
+            in_place (bool, optional): If True, modifies the current sample.
                 If False, returns a new filtered sample. Default is True.
-            new_name (str, optional): Name for the new sample. Only used if 
+            new_name (str, optional): Name for the new sample. Only used if
                 `in_place=False`. Defaults to original sample name.
-    
+
         Returns:
-            Sample or None: Returns a new Sample instance if `in_place=False`. 
+            Sample or None: Returns a new Sample instance if `in_place=False`.
             Returns None if `in_place=True`.
-        
+
         Example:
             >>> # In-place filtering (keep first two entries)
             >>> sample.ind_filter(np.arange(2))
-            >>> 
+            >>>
             >>> # Create a filtered copy with a new name
             >>> new_sample = sample.ind_filter(np.arange(2), in_place=False, new_name="subset")
             >>> new_sample.name
@@ -178,27 +180,26 @@ class Sample:
             # modify current object
             for attr, arr in self.__dict__.items():
                 if isinstance(arr, np.ndarray) and arr.ndim > 0:
-                    
                     # note that setattr can't be used as it would fail
                     # the _validate_size check
                     self.__dict__[attr] = arr[ind]
             return
 
         # TODO: not super happy with in-memory copying but should do for now
-        # may need to make SequencingSample object more mutable in the 
+        # may need to make SequencingSample object more mutable in the
         # future to avoid this
         new_obj = copy.copy(self)
-    
+
         for attr, arr in self.__dict__.items():
             if isinstance(arr, np.ndarray):
                 if arr.ndim > 0:
                     new_obj.__dict__[attr] = arr[ind]
                 else:
                     new_obj.__dict__[attr] = arr.copy()
-    
+
         if new_name is not None:
             new_obj.name = new_name
-    
+
         new_obj._validate_size()
         return new_obj
 
@@ -325,12 +326,12 @@ class SequencingSample(Sample):
 
     def _is_collapsed(self):
         """
-    Check whether the internal state array is collapsed.
-    The idea is that depending on the pipeline, a sample's
-    internal state may collapse without explicitly calling
-    self._collapse_internal_state (which is a good thing).     
+        Check whether the internal state array is collapsed.
+        The idea is that depending on the pipeline, a sample's
+        internal state may collapse without explicitly calling
+        self._collapse_internal_state (which is a good thing).
         """
-        if self._internal_state.ndim > 1:    
+        if self._internal_state.ndim > 1:
             if np.all(self._internal_state.sum(axis=1) == 1):
                 return True
         return

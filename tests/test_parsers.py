@@ -2,6 +2,7 @@
 Created on Sat Oct 18 01:38:54 2025
 @author: Alex Vinogradov
 """
+
 from pathlib import Path
 
 
@@ -98,6 +99,7 @@ def test_pipeline_Walport(Walport_config, tmp_path, data_dir):
     assert data[0].size == 1420
     assert data[1].size == 513
 
+
 def test_no_config_parser(tmp_path, data_dir):
     import clibas as C
 
@@ -132,15 +134,15 @@ def test_no_config_parser(tmp_path, data_dir):
             C.fastq_parser.dataset_wide_count_summary(where="pep", top_n=2000),
         ]
     )
-    
+
     loader = C.data_loader.fetch_fastq_from_dir(data_dir=data_dir)
     data = C.pipeline.load_and_run(loader=loader, save_summary=True)
-    
+
     assert data.size == 2
     assert data[0].size == 136
     assert data[1].size == 1859
-    
-    
+
+
 def test_dir_streaming(Heinis_config, tmp_path, data_dir):
     import clibas as C
 
@@ -163,7 +165,7 @@ def test_dir_streaming(Heinis_config, tmp_path, data_dir):
 
     streamer = C.data_loader.stream_from_fastq_dir(data_dir=data_dir)
     C.pipeline.stream(streamer=streamer, save_summary=False)
-    
+
     lookup = Path(C.fastq_parser.dirs.logs)
     n_subs = sum(1 for p in lookup.iterdir() if p.is_dir())
     assert n_subs == 2
@@ -193,15 +195,16 @@ def test_file_streaming(Walport_config, tmp_path, data_dir):
     fname = Path(__file__).parent / "data" / "PADI4_r5_15_min_test.gz"
     streamer = C.data_loader.stream_from_gz_file(fname=fname, reads_per_chunk=500)
     C.pipeline.stream(streamer=streamer, save_summary=False)
-    
+
     lookup = Path(C.fastq_parser.dirs.logs)
     n_subs = sum(1 for p in lookup.iterdir() if p.is_dir())
     assert n_subs == 4
     return
 
+
 def test_streaming_memory_stable(tmp_path, data_dir):
-    
     import gc
+
     import clibas as C
 
     C.initialize()
@@ -211,54 +214,34 @@ def test_streaming_memory_stable(tmp_path, data_dir):
     C.fastq_parser.dirs.analysis_out = str(tmp_path / "streaming_file")
 
     (tmp_path / "streaming_file").mkdir()
-    
+
     import tracemalloc
+
     tracemalloc.start()
-    
-    C.pipeline.enque([
-        C.fastq_parser.translate(),
-        C.fastq_parser.count_summary(where='pep', top_n=100, fmt='csv'),
-    ])
-    
+
+    C.pipeline.enque(
+        [
+            C.fastq_parser.translate(),
+            C.fastq_parser.count_summary(where="pep", top_n=100, fmt="csv"),
+        ]
+    )
+
     streamer = C.data_loader.stream_from_gz_dir(data_dir=data_dir)
-    
+
     # measure memory before
     gc.collect()
     snapshot1 = tracemalloc.take_snapshot()
-    
+
     # process streams
     C.pipeline.stream(streamer=streamer, save_summary=False)
-    
+
     # measure after
     gc.collect()
     snapshot2 = tracemalloc.take_snapshot()
-    
+
     # memory growth should be minimal (< 10MB for test data)
-    stats = snapshot2.compare_to(snapshot1, 'lineno')
+    stats = snapshot2.compare_to(snapshot1, "lineno")
     total_growth = sum(stat.size_diff for stat in stats) / 1024 / 1024  # MB
-    
+
     assert total_growth < 10, f"Memory leaked {total_growth:.1f}MB during streaming"
     tracemalloc.stop()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

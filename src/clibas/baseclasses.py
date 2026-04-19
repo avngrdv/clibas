@@ -127,7 +127,7 @@ class DirectoryTracker:
             else:
                 setattr(self, attr, getattr(self._conf, attr))
         return
-    
+
     # this doesn't actually seem necessary -> rely on a lazy folder creation instead
     def __setup_dirs(self):
         for d in [x for x in dir(self) if not x.startswith("_")]:
@@ -201,7 +201,7 @@ class Handler:
             else:
                 msg = "Peptide library design not set: cannot analyze peptide datasets without specifying a library design."
                 self.logger.error(msg)
-                raise ValueError(msg)                
+                raise ValueError(msg)
 
         if where == "dna":
             if hasattr(self, "D_design"):
@@ -210,10 +210,8 @@ class Handler:
                 msg = "DNA library design not set: cannot analyze DNA datasets without specifying a library design."
                 self.logger.error(msg)
                 raise ValueError(msg)
- 
-    
+
     def _infer_alphabet(self, where=None, alphabet=None):
-        
         # if alphabet is specified: override any inferences
         if alphabet is not None:
             if isinstance(alphabet, np.ndarray):
@@ -223,9 +221,9 @@ class Handler:
                     raise ValueError(msg)
 
             if isinstance(alphabet, (np.ndarray, list, tuple)):
-                return tuple(i if isinstance(i, bytes) else str(i).encode()
-                             for i in alphabet
-                            )
+                return tuple(
+                    i if isinstance(i, bytes) else str(i).encode() for i in alphabet
+                )
             else:
                 if alphabet == "aa":
                     return self.constants.aas
@@ -237,7 +235,7 @@ class Handler:
                     msg = 'Parameter "alphabet" was expected as type=(list, tuple, np.ndarray) or a keyword ("aa", "base"); received: {type(alphabet)}'
                     self.logger.error(msg)
                     raise ValueError(msg)
-                
+
         # if no alphabet is supplied, infer
         if where == "pep":
             return self.constants.aas
@@ -247,9 +245,8 @@ class Handler:
 
         msg = "Token alphabet was not supplied or was not understood. . ."
         self.logger.error(msg)
-        raise ValueError(msg)        
-    
-    
+        raise ValueError(msg)
+
     def _loc_check(self, loc, design):
         if not isinstance(loc, (list, tuple)):
             msg = f"The Parser expected to receive a list of region indexes to parse; received: {type(loc)}"
@@ -270,7 +267,7 @@ class Handler:
                     os.makedirs(destination)
         else:
             if not os.path.isdir(root):
-                os.makedirs(root)            
+                os.makedirs(root)
         return
 
     def _L_summary(self, arr):

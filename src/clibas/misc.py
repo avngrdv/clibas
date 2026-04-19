@@ -392,30 +392,3 @@ def freq_to_information_content(F):
         IC.loc[i] = freqs * float(R)
 
     return IC
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

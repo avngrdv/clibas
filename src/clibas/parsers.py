@@ -56,7 +56,7 @@ class FastqParser(Handler):
 
         if hasattr(self, "orf_locator"):
             self.orf_locator = self.orf_locator.encode("ascii")
-        
+
         if hasattr(self, "sample_barcodes"):
             self._validate_barcodes()
         return
@@ -75,22 +75,22 @@ class FastqParser(Handler):
         names = list(self.sample_barcodes.keys())
         for i in range(len(barcodes)):
             bc = barcodes[i]
-            
+
             if not isinstance(bc, str):
                 msg = f"<FastqParser> received faulty sample barcodes; expected individual barcodes of str type, received: {type(bc)}"
                 self.logger.error(msg)
-                raise ValueError(msg)    
-                
-            bc = tuple(s.encode('ascii') for s in list(bc))
+                raise ValueError(msg)
+
+            bc = tuple(s.encode("ascii") for s in list(bc))
             if not all(x in self.constants.bases for x in bc):
                 msg = "<FastqParser> received barcodes containing unrecognized symbols. . ."
                 self.logger.error(msg)
-                raise ValueError(msg)      
-                
+                raise ValueError(msg)
+
             validated_dict[names[i]] = bc
-            
+
         self.sample_barcodes = validated_dict
-        return 
+        return
 
     def _dna_to_pep_v2(
         self, seq, first_aa=None, force_at_frame=None, stop_readthrough=False
@@ -210,8 +210,8 @@ class FastqParser(Handler):
         ORF detection via a configurable sequence pattern or forced translation at
         a specified frame. Designed for one-ORF-per-read NGS data rather than long
         reads with multiple ORFs.
-        
-        An underscore '_' is appended to the C-terminus if the final codon is 
+
+        An underscore '_' is appended to the C-terminus if the final codon is
         incomplete and no stop codon is present.
 
         Args:
@@ -219,12 +219,12 @@ class FastqParser(Handler):
                 performs automatic ORF search using the pattern specified in the
                 config (orf_locator), in which case translation begins downstream
                 of the matched pattern; the search is conducted in the 5'-to-3' direction,
-                and the first match is used to initiate translation. If no orf_locator is 
+                and the first match is used to initiate translation. If no orf_locator is
                 specified, the operation defaults to "ATG" as orf_locator.
-                
-                If force_at_frame is specified, it forces translation to start at 
+
+                If force_at_frame is specified, it forces translation to start at
                 the given frame regardless of pattern matching.
-               
+
                 For example:
                     >>>                DNA: TACGACTCACTATAGGGTTAACTTTAAGAAGGA
                     >>>   force_at_frame=0  ---------->
@@ -246,7 +246,7 @@ class FastqParser(Handler):
             msg = f'<translate> op expected to receive param "stop_readthrough" as type=bool; received: {type(stop_readthrough)}'
             self.logger.error(msg)
             raise ValueError(msg)
-            
+
         if force_at_frame is not None:
             if not isinstance(force_at_frame, int):
                 msg = f'<translate> op expected to receive param "force_at_frame" as dtype=int; received: {type(force_at_frame)}'
@@ -713,11 +713,11 @@ class FastqParser(Handler):
             minQ (int, optional): Minimum quality score threshold. All Q scores in
                 the specified regions must be >= this value. Mutually exclusive
                 with ``avgQ``.
-                
+
             avgQ (int, optional): Average quality score threshold. The mean Q score
                 across the specified regions must be >= this value. Mutually
                 exclusive with ``minQ``.
-                
+
             loc (list[int], optional): List of region indices to evaluate for
                 quality filtering. If ``None``, all regions are considered.
 
@@ -738,47 +738,49 @@ class FastqParser(Handler):
             self.logger.error(msg)
             raise ValueError(msg)
 
-        thresh, kind = (
-            (minQ, "min") if minQ is not None else (avgQ, "avg")
-        )
+        thresh, kind = (minQ, "min") if minQ is not None else (avgQ, "avg")
 
         if not isinstance(thresh, int):
             msg = f"<Q_score_filter> op expected to receive argument minQ/avgQ as as int; received: {type(thresh)}"
             self.logger.error(msg)
             raise ValueError(msg)
 
-        if loc is not None:    
+        if loc is not None:
             self._infer_design("dna")
             self._loc_check(loc, self.D_design)
 
         def q_score_filter(data):
             import numpy.ma as ma
+
             for sample in data:
                 arr = sample.civilized_Q
                 self._empty_array_check(arr, inspect.stack()[0][3])
 
-                if loc is None:  
-                    if kind == 'min':
-                        ind = np.all(ma.array(arr, mask=arr==0) >= thresh, axis=1).data
-                        
-                    elif kind == 'avg':
-                        ind = (ma.array(arr, mask=arr==0).mean(axis=1) >= thresh).data
-                        
+                if loc is None:
+                    if kind == "min":
+                        ind = np.all(
+                            ma.array(arr, mask=arr == 0) >= thresh, axis=1
+                        ).data
+
+                    elif kind == "avg":
+                        ind = (ma.array(arr, mask=arr == 0).mean(axis=1) >= thresh).data
+
                     sample.ind_filter(ind)
-                    
+
                 else:
                     for i, template in enumerate(self.D_design):
                         row_mask = sample._internal_state[:, i]
                         col_mask = template(loc, return_mask=True)
-                        
-                        if kind == 'min':
+
+                        if kind == "min":
                             sample._internal_state[row_mask, i] = np.all(
                                 arr[row_mask][:, col_mask] >= thresh, axis=1
                             )
-                            
-                        elif kind == 'avg':
-                            sample._internal_state[row_mask, i] = np.mean(
-                                arr[row_mask][:, col_mask], axis=1) >= thresh                         
+
+                        elif kind == "avg":
+                            sample._internal_state[row_mask, i] = (
+                                np.mean(arr[row_mask][:, col_mask], axis=1) >= thresh
+                            )
 
                     # keep every entry that has at least one positive
                     # value in the internal state array
@@ -895,44 +897,44 @@ class FastqParser(Handler):
     def demultiplex_sample_barcodes(self, barcode_loc=None, barcode_tol=None):
         """
         Demultiplex samples based on DNA barcode sequences.
-        
+
         .. note::
            **Pipeline Operation** - Returns a callable for use in processing pipelines.
-        
+
         Splits a multiplexed sample into separate sub-samples according to DNA barcode
         sequences present in specified regions. Each read is assigned to the sample
         whose barcode it most closely matches (within tolerance). Reads that match
         multiple barcodes are assigned to the first matching barcode with a warning.
-        
+
         The operation requires a sample barcode mapping to be specified in the
         config file (``sample_barcodes`` in FastqParserConfig), which defines
         the relationship between sample names and their corresponding barcode
         sequences.
-        
+
         This operation creates new Sample objects for each barcode, named using the
         original sample name concatenated with the barcode name. The original Data
         object is replaced with a new Data instance containing the demultiplexed
         samples.
-        
+
         Args:
             barcode_loc (list): List of integers specifying the DNA region(s)
                 containing the barcode sequence. Must reference positions in the
                 library design.
-                
+
             barcode_tol (int): Maximum Hamming distance allowed between observed and
                 expected barcodes. Reads exceeding this threshold are not assigned
                 to any barcode and are discarded.
-        
+
         Returns:
             callable: Operation that accepts a Data object, performs sample
                 demultiplexing based on barcodes, and returns a new Data object
                 containing the demultiplexed samples.
-        
+
         Note:
             Requires a sample barcode mapping to be specified in the config
             file (``sample_barcodes``) as a dictionary mapping bacrodes names to
             their sequences.
-        
+
         Example:
             >>> # demultiplex using barcode in region 2, allowing up to 1 mismatch
             >>> demux_op = C.fastq_parser.demultiplex_sample_barcodes(
@@ -942,7 +944,7 @@ class FastqParser(Handler):
         """
         self._infer_design("dna")
         self._loc_check(barcode_loc, self.D_design)
-    
+
         if not isinstance(barcode_tol, int):
             msg = f"<demultiplex_sample_barcodes> expected to receive parameter barcode_tol as as int; received: {type(barcode_tol)}"
             self.logger.error(msg)
@@ -959,7 +961,7 @@ class FastqParser(Handler):
 
             demultiplexed_samples = []
             for sample in data:
-                self._empty_array_check(sample.dna, inspect.stack()[0][3])                
+                self._empty_array_check(sample.dna, inspect.stack()[0][3])
 
                 shape = (len(all_barcodes),) + sample._internal_state.shape
                 bc_match = np.zeros(shape, dtype=bool)
@@ -967,45 +969,46 @@ class FastqParser(Handler):
                 # iterate over all barcodes
                 for b, bar in enumerate(all_barcodes):
                     min_match = len(bar) - barcode_tol
-                
+
                     for i, template in enumerate(self.D_design):
                         # use internal state to figure out which
                         # entries are worth focusing on
                         row_mask = sample._internal_state[:, i]
                         row_idx = np.where(row_mask)[0]
                         col_idx = np.array(template(barcode_loc, return_mask=True))
-                        local_bc = self._cast(sample.dna, "2d")[np.ix_(row_idx, col_idx)]
-    
+                        local_bc = self._cast(sample.dna, "2d")[
+                            np.ix_(row_idx, col_idx)
+                        ]
+
                         mask = (local_bc == bar).sum(axis=1) >= min_match
                         bc_match[b, row_idx[mask], i] = 1
-                
+
                 # after barcode iterations are done, we can reduce along the last
-                # axis: if any of the designs match a barcode, then the whole read  
+                # axis: if any of the designs match a barcode, then the whole read
                 # matches the barcode
                 bc_match = bc_match.any(axis=-1)
-                
-                # if a read matches multiple barcodes, raise a warning and 
+
+                # if a read matches multiple barcodes, raise a warning and
                 # collapse the state to one read = one barcode (use the first match)
-                
+
                 # because of this possibility, we don't immediately create new samples
                 # while still iterating
                 if np.any(bc_match.sum(axis=0) > 1):
                     msg = f"<demultiplex_sample_barcodes>: at least some reads in sample {sample.name} match several barcodes simultaneously! The first matched barcode will be used for demultiplexing. . ."
                     self.logger.warning(msg)
-                    bc_match = bc_match & (bc_match.cumsum(axis=1) == 1)                        
-                
-                for b in range(len(all_barcodes)):
-                    bc_sub_sample_name = f'{sample.name}_{barcode_names[b]}'
-                    bc_sub_sample = sample.ind_filter(bc_match[b], 
-                                                      in_place=False,
-                                                      new_name=bc_sub_sample_name
-                                                     )
-                    
-                    demultiplexed_samples.append(bc_sub_sample)
-                
-            return Data(samples=demultiplexed_samples)
-        return split_by_barcode
+                    bc_match = bc_match & (bc_match.cumsum(axis=1) == 1)
 
+                for b in range(len(all_barcodes)):
+                    bc_sub_sample_name = f"{sample.name}_{barcode_names[b]}"
+                    bc_sub_sample = sample.ind_filter(
+                        bc_match[b], in_place=False, new_name=bc_sub_sample_name
+                    )
+
+                    demultiplexed_samples.append(bc_sub_sample)
+
+            return Data(samples=demultiplexed_samples)
+
+        return split_by_barcode
 
     def demultiplex_aa_barcodes(self, barcode_loc=None, barcode_tol=None):
         """
@@ -1030,8 +1033,8 @@ class FastqParser(Handler):
         peptide.
 
         This operation requires a "barcode translation table" to be specified in the
-        config file as part of the "constants" declaration. The barcode translation 
-        table is a dictionary which denotes the mapping between the barcodes and the 
+        config file as part of the "constants" declaration. The barcode translation
+        table is a dictionary which denotes the mapping between the barcodes and the
         degenerate amino acids. It looks like this::
 
             {"CACGAT":
@@ -1085,7 +1088,7 @@ class FastqParser(Handler):
         """
         self._infer_design("dna")
         self._loc_check(barcode_loc, self.D_design)
-    
+
         if not isinstance(barcode_tol, int):
             msg = f"<demultiplex_aa_barcodes> expected to receive parameter barcode_tol as as int; received: {type(barcode_tol)}"
             self.logger.error(msg)
@@ -1339,13 +1342,12 @@ class FastqParser(Handler):
             # this op is really just an axis=0-wide sum of the internal states
             # the only difficulty is that internal states may not be collapsed
             # at this point, in which case results won't make much sense; raise
-            # a warning                
+            # a warning
             for sample in data:
-                
                 if not sample._is_collapsed():
                     msg = f"<library_design_summary> encountered a sample with {where} dataset entries matching multiple specified library templates; this will be reflected in the results. . ."
                     self.logger.warning(msg)
-                
+
                 df.loc[sample.name] = np.sum(sample._internal_state, axis=0)
 
             self._prepare_destinations(root=self.dirs.parser_out)
@@ -1408,7 +1410,7 @@ class FastqParser(Handler):
             for sample in data:
                 arr = self._cast(sample[where], "1d")
                 self._empty_array_check(arr, inspect.stack()[0][3])
-                
+
                 X, C = sorted_count(arr)
                 dfs.append(
                     {
@@ -1424,13 +1426,13 @@ class FastqParser(Handler):
                     pd.DataFrame.from_dict(df), how="outer", on=f"{where} sequence"
                 )
             M = M.fillna(0)
-            
+
             # sort the dataframe: cc: counts columns
             cc = M.select_dtypes(include="number").columns
             M["Total counts"] = M[cc].sum(axis=1)
             M = M.sort_values(by="Total counts", ascending=False)
-            
-            M_p = M.copy() # percentages dataframe
+
+            M_p = M.copy()  # percentages dataframe
             sizes = M[cc].sum(axis=0)
             M_p[cc] = 100 * M_p[cc].div(sizes)
             M_p["Fraction of total"] = M["Total counts"] / sizes.sum()
@@ -1449,7 +1451,7 @@ class FastqParser(Handler):
             # save an analogous percentage spreadsheet
             # M[columns] = 100 * M[columns].div(sizes)
             # M = M.rename(columns={"Total counts": "Fraction of total"})
-            
+
             fname = f"{self.exp_name}_joint_dataset_percentage_summary" + t
             path = os.path.join(self.dirs.parser_out, fname)
             M_p.to_csv(path + ".csv", sep=",", index=False)

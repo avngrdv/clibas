@@ -100,7 +100,7 @@ class DataAnalysisTools(Handler):
         """
         if where is not None:
             self._where_check(where)
-            
+
         la = LengthAnalysis(self.__dict__)
         op = la.len_summary(where=where, save_txt=save_txt)
         return op
@@ -167,7 +167,7 @@ class DataAnalysisTools(Handler):
         """
         if where is not None:
             self._where_check(where)
-            
+
         CA = ConvergenceAnalys(self.__dict__)
         op = CA.sequence_level_convergence(where=where)
         return op
@@ -199,11 +199,11 @@ class DataAnalysisTools(Handler):
 
             alphabet (list, tuple, ndarray, or str, optional): Token alphabet for
                 analysis. Can be one of:
-                
+
                 - a sequence (list, tuple, or ndarray) specifying custom tokens, or
                 - the string 'aa' for the amino acid alphabet as specified in the config, or
                 - the string 'base' for the nucleotide base alphabet as specified in the config.
-                
+
                 If ``None``, the alphabet is automatically inferred from 'where'.
 
             save_txt (bool): If True, save frequency data to CSV file alongside
@@ -220,9 +220,9 @@ class DataAnalysisTools(Handler):
         """
         if where is not None:
             self._where_check(where)
-            
+
         alphabet = self._infer_alphabet(where, alphabet)
-        
+
         if loc is not None:
             design = self._infer_design(where)
             self._loc_check(loc, design)
@@ -282,11 +282,11 @@ class DataAnalysisTools(Handler):
 
             alphabet (list, tuple, ndarray, or str, optional): Token alphabet for
                 analysis. Can be one of:
-                
+
                 - a sequence (list, tuple, or ndarray) specifying custom symbols, or
                 - the string 'aa' for the amino acid alphabet as specified in the config, or
                 - the string 'base' for the nucleotide base alphabet as specified in the config.
-                
+
                 If ``None``, the alphabet is automatically inferred from 'where'.
 
             return_modified (bool): If True, returns Data object with embeddings
@@ -321,7 +321,7 @@ class DataAnalysisTools(Handler):
             ... )
             >>> data = umap_analysis(data)
         """
-        # for historic reasons, here we defer to the child class to 
+        # for historic reasons, here we defer to the child class to
         # do the validation of arguments
         hdu = HDBUMAP(self.__dict__)
         op = hdu.analysis(
@@ -443,7 +443,7 @@ class ConvergenceAnalys(DataAnalysisTools):
                     # the problem is that a pipeline may feed this op arrays containing junk
                     # token not encoded in the alphabet. But on the other hand, it would make
                     # sense to make that the _joint_alphabet_X_check check passes
-                    
+
                     freq = self.get_freqs(arr, alphabet)
                     nloc = "overall"
                     fname = (
@@ -461,7 +461,7 @@ class ConvergenceAnalys(DataAnalysisTools):
                         self.logger.debug(msg)
                         sample._collapse_internal_state()
 
-                    # initialize the frequency array: 
+                    # initialize the frequency array:
                     # the 3D array has to be reduced along axis 0 at the end
                     maxlen = self._find_max_len(design, loc)
                     freq = np.zeros(

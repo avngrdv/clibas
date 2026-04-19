@@ -70,54 +70,30 @@ def Walport_dataset():
 
     return data
 
+
 @pytest.fixture
 def basic_valid_peptides():
-    
     return [
-                'AYATAKA',
-                'HEEISGYRY',
-                'MANADRAIN',
-                'AYATAKA',
-                'VCHERAVECHERYM',
-                'QRIIVA',
-                'AYATAKA',
-                'MANKQSTWIN'        
+        "AYATAKA",
+        "HEEISGYRY",
+        "MANADRAIN",
+        "AYATAKA",
+        "VCHERAVECHERYM",
+        "QRIIVA",
+        "AYATAKA",
+        "MANKQSTWIN",
     ]
+
 
 @pytest.fixture
 def basic_invalid_peptides():
-    
     return [
-                'AYATAKa',
-                'HEEISGYRY',
-                'MANADRAIN',
-                'AYATAKA',
-                'VCHERAVECHERYM',
-                'QRI-VA',
-                'AYATAKA',
-                '2ANKQSTWIN'        
+        "AYATAKa",
+        "HEEISGYRY",
+        "MANADRAIN",
+        "AYATAKA",
+        "VCHERAVECHERYM",
+        "QRI-VA",
+        "AYATAKA",
+        "2ANKQSTWIN",
     ]
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

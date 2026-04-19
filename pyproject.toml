@@ -68,7 +68,7 @@ line-length = 88
 target-version = "py311"
 
 lint.select = ["E", "F", "B", "I", "UP", "C4", "SIM", "W"]
-lint.ignore = ["E501",]
+lint.ignore = ["E501", "C408", "B017"]
 
 fix = true
 

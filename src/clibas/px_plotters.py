@@ -7,18 +7,21 @@ cluster statistics, frequency heatmaps, and sequence logos.
 """
 
 import os
+
 import numpy as np
 import pandas as pd
+
 import clibas.plotters as P
 
 try:
     import plotly.express as px
     import plotly.graph_objects as go
-    from plotly.subplots import make_subplots 
+    from plotly.subplots import make_subplots
 
 except ImportError:
     msg = "Failed to import plotly packages. Please install clibas with `pip install clibas[ml]`. . ."
     raise ImportError(msg)
+
 
 def _save_hmtl(fig, fname=None):
     """

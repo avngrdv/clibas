@@ -43,7 +43,6 @@ class DataPreprocessor(Handler):
     def __repr__(self):
         return "<DataPreprocessor object>"
 
-
     def token_filter(self, tokens_to_filter_by=None):
         """
         Filter sequences containing specific tokens.
@@ -512,7 +511,7 @@ class DataPreprocessor(Handler):
                 self._empty_array_check(arr, inspect.stack()[0][3])
                 self._prepare_destinations(root=self.dirs.ml_data)
                 path = os.path.join(self.dirs.ml_data, f"{sample.name}.hdf5")
-                
+
                 featurize.into_h5(
                     arr,
                     y=sample.y,

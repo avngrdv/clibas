@@ -9,7 +9,8 @@ __version__ = "0.4.3"
 
 # initialize later - need to pass the location of the config file
 _c_instance = None
-    
+
+
 class _clibas_facade:
     def __init__(self, config_path):
         self._config_path = config_path
@@ -71,9 +72,7 @@ _PUBLIC_ATTRS = [
 
 def __getattr__(name):
     if _c_instance is None:
-        raise RuntimeError(
-            "clibas not initialized. Call clibas.initialize() first."
-        )
+        raise RuntimeError("clibas not initialized. Call clibas.initialize() first.")
 
     if name not in _PUBLIC_ATTRS:
         raise AttributeError(f"Module 'clibas' has no attribute '{name}'")

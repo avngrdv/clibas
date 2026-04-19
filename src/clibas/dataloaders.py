@@ -58,7 +58,7 @@ class FastqLoader(Handler):
             y_dim = len(self.D_design)
         else:
             y_dim = 1
-            
+
         shape = (sample.size, y_dim)
         sample._internal_state = np.ones(shape, dtype=bool)
 

@@ -123,11 +123,11 @@ class FeatureMatrix:
 
             # if all easy setups failed, resort to string parsing
             else:
-                # specific to proteinogenic amino acids                
+                # specific to proteinogenic amino acids
                 if descr == "varimax":
                     F = cls.varimax_repr(constants.aas)
                     return cls(F=F, constants=constants)
-                
+
                 prefix = descr.split("_")[0]
                 if prefix == "pep":
                     SMILES = constants.aa_SMILES
@@ -176,6 +176,7 @@ class FeatureMatrix:
         """
 
         from scipy.cluster.hierarchy import linkage
+
         import clibas.plotters as P
 
         if labels is not None:
@@ -209,9 +210,9 @@ class FeatureMatrix:
                 - info: Fingerprint metadata (for structure mapping)
         """
         try:
-            from rdkit import Chem          
+            from rdkit import Chem
             from rdkit.Chem import rdFingerprintGenerator
-            
+
         except ImportError:
             msg = "Failed to import rdkit packages. Please install clibas with `pip install clibas[ml]`. . ."
             raise ImportError(msg)
@@ -484,7 +485,7 @@ class FeatureMatrix:
             varimax_7,
             varimax_8,
         )
-        
+
         try:
             alphabet = [a.decode("ascii") for a in alphabet]
         except KeyError:
@@ -543,7 +544,9 @@ def from_matrix_v3(X, alphabet=None, F=None, reshape=True):
     _is_padded = X.dtype.type() in X
     if _is_padded:
         # just in case, let's assert that this is true
-        assert X.dtype.type() == alphabet.dtype.type(), "<from_matrix_v3>: X and alphabet dtypes must match!"
+        assert X.dtype.type() == alphabet.dtype.type(), (
+            "<from_matrix_v3>: X and alphabet dtypes must match!"
+        )
 
         if alphabet.dtype.type() not in alphabet:
             alphabet = np.hstack((alphabet.dtype.type(), alphabet))
@@ -675,7 +678,7 @@ def into_h5(X, y=None, path=None, F=None, alphabet=None, reshape=False, chunks=2
         ...         alphabet=aas, reshape=False, chunks=10)
     """
     try:
-        import h5py   
+        import h5py
 
     except ImportError:
         msg = "Failed to import h5py. Please install clibas with `pip install clibas[ml]`. . ."

@@ -210,7 +210,9 @@ class Pipeline(Handler):
         Example:
             >>> data = C.pipeline.load_and_run(C.data_loader.fetch_gz_from_dir())
         """
-        self.que = [loader,] + self.que
+        self.que = [
+            loader,
+        ] + self.que
         data = self.run(data=None, save_summary=save_summary)
         return data
 

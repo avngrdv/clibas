@@ -9,10 +9,11 @@ not typically used directly by end users.
 import datetime
 import importlib
 import os
+
 import yaml
 
-from clibas.baseclasses import DirectoryTracker, Logger
 import clibas.config_defaults
+from clibas.baseclasses import DirectoryTracker, Logger
 
 _reserved_names = ("_", "+", "*", "1", "2", "3", "4", "5", "6", "7", "8", "9", "0")
 
@@ -35,12 +36,11 @@ class Dispatcher:
         return f"<Dispatcher object at {hex(id(self))}>"
 
     def _preparse_yaml_config(self, config_fname):
-        
         # if nothing at all is passed - it's fine
         if not config_fname:
             self.config = {}
             return
-        
+
         # but a faulty file should raise
         try:
             with open(config_fname) as file:
@@ -77,10 +77,10 @@ class Dispatcher:
                     if not hasattr(self.config["LoggerConfig"], "log_fname"):
                         t = datetime.datetime.now()
                         timestamp = f"_{t.year}_{t.month}_{t.day}_{t.hour}_{t.minute}_{t.second}"
-                        
+
                         if not os.path.isdir(self.dirs.logs):
-                            os.makedirs(self.dirs.logs)                           
-                        
+                            os.makedirs(self.dirs.logs)
+
                         self.config["LoggerConfig"].log_fname = os.path.join(
                             self.dirs.logs,
                             self.config["experiment"].value + timestamp + "_logs.txt",
@@ -97,41 +97,44 @@ class Dispatcher:
         if len(inter) == 1:
             if inter.pop() == "*":
                 return
-            
+
         msg = "<Dispatcher>: Amino acids in the translation table can not be encoded by reserved names. . . "
         self.L.error(msg)
         raise ValueError(msg)
         return
-    
+
     def _parse_constants_config(self):
         # setup constants: if no constants are given, fallback to defaults right away
         if "constants" in self.config:
             self.constants = self.config["constants"]
             if not all(
-                       (hasattr(self, "aas"),
-                        hasattr(self, "translation_table"),
-                        hasattr(self, "bases")
-                       )
-                      ):
+                (
+                    hasattr(self, "aas"),
+                    hasattr(self, "translation_table"),
+                    hasattr(self, "bases"),
+                )
+            ):
                 msg = "<Dispatcher>: config is missing some basic definitions (bases, amino acids, translation tables, etc); will use defaults for the missing values. . . "
-                self.L.debug(msg)          
-                
+                self.L.debug(msg)
+
         else:
             msg = "<Dispatcher>: config is missing some basic definitions (bases, amino acids, translation tables, etc); will use defaults for the missing values. . . "
             self.L.debug(msg)
-        
+
             import copy
             import types
-            self.constants = types.SimpleNamespace(**{
-                k: copy.deepcopy(v) for k, v in 
-                vars(clibas.config_defaults).items()
-                if not k.startswith("_")
-            }
+
+            self.constants = types.SimpleNamespace(
+                **{
+                    k: copy.deepcopy(v)
+                    for k, v in vars(clibas.config_defaults).items()
+                    if not k.startswith("_")
+                }
             )
-            
-        b_def_aas = tuple(s.encode("ascii") for s in clibas.config_defaults.aas)            
+
+        b_def_aas = tuple(s.encode("ascii") for s in clibas.config_defaults.aas)
         b_def_base = tuple(s.encode("ascii") for s in clibas.config_defaults.bases)
-        
+
         # deal with amino acids
         if hasattr(self.constants, "aas"):
             if set(self.constants.aas) & set(_reserved_names):
@@ -157,18 +160,18 @@ class Dispatcher:
             )
 
         # if no amino acid info is passed, fallback to defaults
-        else:    
+        else:
             self.constants.aas = b_def_aas
-                
-        # set up translation table    
+
+        # set up translation table
         if hasattr(self.constants, "translation_table"):
             table = self.constants.translation_table
         else:
             table = clibas.config_defaults.translation_table
-            
+
         self._validate_translation_table(table)
         self.constants.translation_table = {
-            k.encode("ascii"): v.encode("ascii") for k, v in table.items()  
+            k.encode("ascii"): v.encode("ascii") for k, v in table.items()
         }
 
         # set up custom initiator amino acid: if any; there is no fallback for this.
@@ -203,15 +206,15 @@ class Dispatcher:
             self.constants.aa_SMILES = tuple(
                 self.constants.aa_SMILES[k.decode("ascii")] for k in sorted_keys
             )
-            
+
         # if aa_SMILES is not explicitly specified, but aas are all standard, we
         # can still rescue this:
         elif self.constants.aas == b_def_aas:
             self.constants.aa_SMILES = tuple(
-                clibas.config_defaults.aa_SMILES[k.decode("ascii")] 
+                clibas.config_defaults.aa_SMILES[k.decode("ascii")]
                 for k in self.constants.aas
-            )  
-            
+            )
+
         # parse the barcode_table if present
         if hasattr(self.constants, "barcode_table"):
             self.constants.barcode_table = {
@@ -226,8 +229,8 @@ class Dispatcher:
             if set(self.constants.bases) & set(_reserved_names):
                 msg = "<Dispatcher>: Nucleotide monomers can not be encoded by reserved names. . . "
                 self.L.error(msg)
-                raise ValueError(msg)            
-            
+                raise ValueError(msg)
+
             self.constants.bases = tuple(
                 sorted(s.encode("ascii") for s in self.constants.bases)
             )
@@ -243,7 +246,9 @@ class Dispatcher:
                 raise ValueError(msg)
 
             sorted_keys = tuple(
-                sorted(list(s.encode("ascii") for s in self.constants.base_SMILES.keys()))
+                sorted(
+                    list(s.encode("ascii") for s in self.constants.base_SMILES.keys())
+                )
             )
             if sorted_keys != self.constants.bases:
                 msg = "<Dispatcher>: Nucleotide alphabet does not match the base_SMILES dictionary. . . "
@@ -253,14 +258,14 @@ class Dispatcher:
             self.constants.base_SMILES = tuple(
                 self.constants.base_SMILES[k.decode("ascii")] for k in sorted_keys
             )
-            
+
         # if base_SMILES is not explicitly specified, but bases are all standard,
         # we can still rescue this:
         elif self.constants.bases == b_def_base:
             self.constants.base_SMILES = tuple(
-                clibas.config_defaults.base_SMILES[k.decode("ascii")] 
+                clibas.config_defaults.base_SMILES[k.decode("ascii")]
                 for k in self.constants.bases
-            )  
+            )
 
         # setup the complement table: only really needed if revcom is used
         if hasattr(self.constants, "complement_table"):
@@ -300,9 +305,9 @@ class Dispatcher:
                     lib_type="pep",
                     val_monomer=self.constants.aas,
                 )
-            
+
             # note that the condition below is very difficult to violate at the
-            # moment, but let's just keep it for now. 
+            # moment, but let's just keep it for now.
             else:
                 msg = "Dispatcher: cannot setup a peptide library design without the amino acid alphabet specifications. . ."
                 self.L.error(msg)
