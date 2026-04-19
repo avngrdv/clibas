@@ -13,6 +13,9 @@ Welcome to clibas – a Python package for analyzing NGS data from combinatorial
 
 ## Quick start
 
+### NOT YET AVAILABLE
+It is recommended that clibas is installed in a dedicated virtual environment to avoid potential version conflicts with existing packages. Any virtual environment (e.g., `conda` or `pipenv`) will work for this purpose. 
+
 The library can be installed from PyPI:
 
 ```bash
@@ -44,4 +47,4 @@ Accompanying paper: link tbd \
 
 ## Citation
 
-If find this code useful, please cite the accompanying publication: _tbd_ / _link tbd_
+If you use clibas, please cite the accompanying publication: _tbd_ / _link tbd_

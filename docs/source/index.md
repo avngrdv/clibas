@@ -35,6 +35,8 @@ For step-by-step instructions on building analysis pipelines, see the Tutorial s
 (Installation)=
 ## Installation
 
+It is recommended that clibas is installed in a dedicated virtual environment to avoid potential version conflicts with existing packages. Any virtual environment (e.g., `conda` or `pipenv`) will work for this purpose. 
+
 The library can be installed from PyPI:
 
 ```bash

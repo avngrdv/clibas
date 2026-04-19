@@ -1,0 +1,6 @@
+include src/clibas/cython_hacks.pyx
+include src/clibas/cython_hacks.pxd
+exclude src/clibas/cython_hacks.c
+exclude src/clibas/*.pyd
+recursive-exclude src/clibas/build *
+recursive-exclude src/clibas/__pycache__ *

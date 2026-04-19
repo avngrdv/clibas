@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=61", "wheel", "Cython", "numpy>=2.2"]
+requires = ["setuptools>=61", "wheel", "Cython>=3.0", "numpy>=2.2"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -44,7 +44,8 @@ dev = [
     "pytest",
     "black",
     "flake8",
-	"ruff"
+	"ruff",
+	"cibuildwheel"
 ]
 
 [tool.setuptools.packages.find]
@@ -53,6 +54,11 @@ where = ["src"]
 [tool.setuptools.package-data]
 clibas = ["*.pyx", "*.pxd"]
 
+[tool.sphinx]
+builder = "html"
+source-dir = "docs/source"
+
+# ── linting ──────────────────────────────────────────────────────────────────
 [tool.black]
 line-length = 88
 target-version = ["py311"]
@@ -80,6 +86,21 @@ quote-style = "double"
 indent-style = "space"
 skip-magic-trailing-comma = false
 
-[tool.sphinx]
-builder = "html"
-source-dir = "docs/source"
+# ── cibuildwheel config (read by the GitHub Actions job) ─────────────────────
+[tool.cibuildwheel]
+build = "cp310-* cp311-* cp312-* cp313-*"
+skip  = "*-win32 *-manylinux_i686 *-musllinux*"
+before-build = "pip install numpy cython"
+test-requires = ["numpy"]
+test-command  = "python -c \"from clibas.cython_hacks import idx_finder; print('OK')\""
+
+[tool.cibuildwheel.linux]
+manylinux-x86_64-image = "manylinux_2_28"
+manylinux-aarch64-image = "manylinux_2_28"
+archs = "x86_64"
+
+[tool.cibuildwheel.macos]
+archs = "x86_64 arm64"
+
+[tool.cibuildwheel.windows]
+archs = "AMD64"

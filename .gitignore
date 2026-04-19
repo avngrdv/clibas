@@ -3,6 +3,12 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# Cython-generated C source: regenerated from .pyx during build.
+src/clibas/cython_hacks.c
+
+# Cython build artefacts inside src/
+src/clibas/build/
+
 #C extensions
 *.so
 
