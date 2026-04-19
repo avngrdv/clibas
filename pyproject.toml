@@ -1,0 +1,85 @@
+[build-system]
+requires = ["setuptools>=61", "wheel", "Cython", "numpy>=2.2"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "clibas"
+version = "0.4.3"
+description = "Combinatorial Library Analysis Suite: analysis of NGS data"
+authors = [{name = "Alexander Vinogradov", email = "a_vngrdv@pm.me"}]
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+keywords = ["chemoinformatics", "bioinformatics"] 
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+    "Topic :: Scientific/Engineering :: Chemistry",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3", 
+]
+
+dependencies = [
+    "numpy>=2.2",
+    "pandas",
+    "matplotlib",
+    "scipy",
+    "pyyaml",
+    "logomaker",
+    "seaborn",
+]
+
+[project.optional-dependencies]
+ml = [
+    "scikit-learn",
+    "rdkit>=2024.3.5",
+    "umap-learn",
+    "hdbscan",
+    "plotly",
+    "h5py"
+]
+
+dev = [
+    "pytest",
+    "black",
+    "flake8",
+	"ruff"
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+clibas = ["*.pyx", "*.pxd"]
+
+[tool.black]
+line-length = 88
+target-version = ["py311"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+
+lint.select = ["E", "F", "B", "I", "UP", "C4", "SIM", "W"]
+lint.ignore = ["E501",]
+
+fix = true
+
+exclude = [
+    ".venv",
+    "venv",
+    "__pycache__",
+    "migrations",
+    "build",
+    "dist",
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+
+[tool.sphinx]
+builder = "html"
+source-dir = "docs/source"

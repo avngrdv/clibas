@@ -1,0 +1,59 @@
+/* Make right sidebar TOC more visible */
+.toc-tree li.scroll-current > a {
+    font-weight: bold;
+    color: var(--color-brand-primary);
+}
+
+.toc-tree a {
+    font-size: 1.1rem;
+    opacity: 1 !important;
+}
+
+.toc-title {
+    font-size: 1.1rem;
+    font-weight: bold;
+    opacity: 1 !important;
+}
+
+.sidebar-tree .caption-text {
+    font-size: 1.1rem;
+    font-weight: bold;
+}
+
+.sidebar-tree a {
+    font-size: 1.1rem;
+}
+
+/* Justify text */
+.rst-content p,
+article p {
+    text-align: justify;
+}
+
+/* Place a letterhead image */
+article[role="main"]::before {
+    content: "";
+    display: block;
+    background: url("clibas_logo_v1.png") no-repeat center;
+    background-size: 500px 227px; 
+    height: 227px;
+    width: 100%;
+    margin: 1rem 0 2rem 0;
+}
+
+[data-theme="dark"] article[role="main"]::before {
+    background-image: url("clibas_logo_dark_v1.png");
+    mix-blend-mode: normal;
+}
+
+[data-theme="light"] article[role="main"]::before {
+    background: url("clibas_logo_v1.png") no-repeat center;
+    background-size: 500px 227px;
+}
+
+@media (prefers-color-scheme: dark) {
+    article[role="main"]::before {
+        background: url("clibas_logo_dark_v1.png") no-repeat center;
+        background-size: 500px 227px;
+    }
+}

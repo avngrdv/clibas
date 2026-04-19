@@ -1,0 +1,40 @@
+experiment: "Heinis_FXIa_selection"
+
+LibraryDesigns:
+  dna_templates:
+    - "CCAGCCGGCCATGGCG111232111111111111111232111GGTTCTGGC"
+    - "CCAGCCGGCCATGGCG111232111111111111111111232111GGTTCTGGC"
+    - "CCAGCCGGCCATGGCG111232111111111111111111111232111GGTTCTGGC"
+    - "CCAGCCGGCCATGGCG111232111111111111111111111111232111GGTTCTGGC"
+    - "CCAGCCGGCCATGGCG111232111111111111111111111111111232111GGTTCTGGC"
+    - "CCAGCCGGCCATGGCG111232111111111111111111111111111111232111GGTTCTGGC"
+    
+  dna_monomers:
+    1: ["A", "G", "T", "C"] #N
+    2: ["T"]
+    3: ["G"]
+    
+  pep_templates:
+    - "MA121111121GSG"
+    - "MA1211111121GSG"
+    - "MA12111111121GSG"
+    - "MA121111111121GSG"
+    - "MA1211111111121GSG"
+    - "MA12111111111121GSG"
+ 
+  pep_monomers:
+    1: ["A", "C", "D", "E", "F", "G", "H", "I", "K", "L", "M", "N", "P", "Q", "R", "S", "T", "V", "W", "Y"]
+    2: ["C"]
+
+FastqParserConfig:
+  orf_locator: "GGC.ATG"            # A regex pattern that has to match to initiate the ORF 
+
+TrackerConfig:
+  logs: "./outputs/Heinis_FXIa"                 # Directory for writing logs to
+  parser_out: "./outputs/Heinis_FXIa"           # Directory that stores fastq parser outputs
+  analysis_out: "./outputs/Heinis_FXIa"         # Directory that stores outputs of data analysis operations
+  
+LoggerConfig:
+  verbose: true                     # Verbose loggers print to the console
+  log_to_file: false                # Write logs to file
+  level: "INFO"                     # Logger level; accepted values: "DEBUG", "INFO", "WARNING", "ERROR"

@@ -1,0 +1,12 @@
+LibraryDesigns:
+  pep_templates:
+    - "MA121111121GSG"
+    - "MA1211111121GSG"
+    - "MA12111111121GSG"
+    - "MA121111111121GSG"
+    - "MA1211111111121GSG"
+    - "MA12111111111121GSG"
+ 
+  pep_monomers:
+    1: ["A", "C", "D", "E", "F", "G", "H", "I", "K", "L", "M", "N", "P", "Q", "R", "S", "T", "V", "W", "Y"]
+    2: ["C"]
