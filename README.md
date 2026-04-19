@@ -1,6 +1,13 @@
+<picture>
+  <source srcset="/docs/source/_static/clibas_logo_dark_v1.png" media="(prefers-color-scheme: dark)">
+  <img src="/docs/source/_static/clibas_logo_v1.png" alt="clibas logo">
+</picture>
+
 # clibas
 
-clibas is a Python package for analyzing NGS data from combinatorial genetically encoded libraries, supporting workflows like mRNA/phage/yeast display and SELEX selections. The library provides fast, scalable tools for parsing, filtering, and analyzing .fastq files at both DNA and translated peptide levels, with a high-level API to build sophisticated analysis pipelines in just a few lines of code.
+### CAREFUL: WORK IN PROGRESS
+
+Welcome to clibas – a Python package for analyzing NGS data from combinatorial genetically encoded libraries, including techniques like mRNA/phage/yeast display and SELEX selections. The library provides fast and scalable tools for parsing, filtering, and analyzing .fastq files at both DNA and translated peptide levels, with a high-level API to build sophisticated analysis pipelines in just a few lines of code.
 
 ## Quick start
 
@@ -17,7 +24,7 @@ pip install clibas
 ```
 
 ## Documentation & examples
-For full documentation, including a tutorial, API reference, and jupyter notebook examples, please visit our _documentation site_. Example .ipynb notebooks are also available in this repo in `docs\source\examples`
+For full documentation, including a tutorial, API reference, and jupyter notebook examples, please visit our *documentation site*. Example .ipynb notebooks are also available in this repo in `docs\source\examples`
 
 ## Contact
 
@@ -30,7 +37,8 @@ Any contributions – code, feature requests, jupyter notebooks – are welcome!
 Project on PyPI: link tbd \
 Documentation: link tbd \
 Accompanying paper: link tbd \
-[Vinogradov Lab at NUS](https://vinogradov.science/){target=_blank}
+<a href="https://vinogradov.science/" target="_blank">Vinogradov Lab at NUS</a>
+
 
 ## Citation
 
