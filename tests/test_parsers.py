@@ -49,8 +49,14 @@ def test_pipeline_Heinis(Heinis_config, tmp_path, data_dir):
     data = C.pipeline.load_and_run(loader=loader, save_summary=True)
 
     assert data.size == 2
-    assert data[0].size == 1414
-    assert data[1].size == 1653
+
+    for sample in data:
+        if sample.name == "FXIa_r3_L7_S00_test":
+            assert sample.size == 1414
+
+        elif sample.name == "FXIa_r6_L7_S10_test":
+            assert sample.size == 1653
+
     return
 
 
@@ -96,8 +102,15 @@ def test_pipeline_Walport(Walport_config, tmp_path, data_dir):
     data = C.pipeline.load_and_run(loader=loader, save_summary=True)
 
     assert data.size == 2
-    assert data[0].size == 1420
-    assert data[1].size == 513
+
+    for sample in data:
+        if sample.name == "PADI4_r5_15_min_test":
+            assert sample.size == 1420
+
+        elif sample.name == "PADI4_r6_15_min_test":
+            assert sample.size == 513
+
+    return
 
 
 def test_no_config_parser(tmp_path, data_dir):
@@ -139,8 +152,15 @@ def test_no_config_parser(tmp_path, data_dir):
     data = C.pipeline.load_and_run(loader=loader, save_summary=True)
 
     assert data.size == 2
-    assert data[0].size == 136
-    assert data[1].size == 1859
+
+    for sample in data:
+        if sample.name == "FXIa_r3_L7_S00_test":
+            assert sample.size == 136
+
+        elif sample.name == "FXIa_r6_L7_S10_test":
+            assert sample.size == 1859
+
+    return
 
 
 def test_dir_streaming(Heinis_config, tmp_path, data_dir):
