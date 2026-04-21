@@ -61,7 +61,7 @@ jobs:
         uses: pypa/cibuildwheel@v2.22.0
         env:
           CIBW_BUILD: cp310-* cp311-* cp312-* cp313-*
-          CIBW_SKIP: "*-win32 *-manylinux_i686 *-musllinux*"
+          CIBW_SKIP: "*-win32 *-manylinux_i686 *-musllinux* cp313-*macosx*_x86_64"
           CIBW_BEFORE_BUILD: pip install numpy cython
           CIBW_TEST_REQUIRES: numpy
           CIBW_TEST_COMMAND: python -c "from clibas.cython_hacks import idx_finder; print('cython_hacks OK')"
