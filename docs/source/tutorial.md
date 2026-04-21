@@ -145,7 +145,7 @@ Because pipeline operations can reference individual regions, the order in which
 
 ## Writing config files
 
-Config files in clibas are written in `.yaml` format, and are used to specify library designs, in silico translation behaviour, and various runtime settings such as output directories and logging behavior.
+Config files in clibas are written in `.yaml` format, and are used to specify library designs, in silico translation behaviour, and various runtime settings such as output directories and logging behavior. Several reference config files used in jupyter notebook examples are available on [github](https://github.com/avngrdv/clibas/tree/main/example_configs){target=_blank}. 
 
 ### Library design
 

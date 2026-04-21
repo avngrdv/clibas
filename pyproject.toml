@@ -5,9 +5,9 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "clibas"
 version = "0.4.3"
-description = "Combinatorial Library Analysis Suite: analysis of NGS data"
+description = "Combinatorial Library Analysis Suite: analysis of NGS data from genetically encoded libraries"
 authors = [{name = "Alexander Vinogradov", email = "a_vngrdv@pm.me"}]
-readme = "README.md"
+readme = "pypi_readme.md"
 requires-python = ">=3.10"
 license = {text = "MIT"}
 keywords = ["chemoinformatics", "bioinformatics"] 
@@ -18,6 +18,9 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Chemistry",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3", 
+	"Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
 ]
 
 dependencies = [

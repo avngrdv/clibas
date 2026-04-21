@@ -1,0 +1,109 @@
+experiment: "FltJ_DOMEK_pipeline"
+
+constants:
+  description: |
+    Star symbol (*) is internally reserved for stop codons that terminate
+    translation.
+    
+    Plus and underscore symbols (+ and _) are internally reserved tokens.
+    Numerals (1234567890) are internally reserved for library design 
+    specifications. These symbols (123456790+_) should not be used to
+    encode amino acids.
+    
+    Other symbols are OK.   
+    
+  translation_table:
+    ATA: "I"
+    ATC: "I"
+    ATT: "I"
+    ATG: "d" #Dha
+    ACA: "T"
+    ACC: "T"
+    ACG: "T"
+    ACT: "T"
+    AAC: "N"
+    AAT: "N"
+    AAA: "K"
+    AAG: "K"
+    AGC: "S"
+    AGT: "S"
+    AGA: "R"
+    AGG: "R"
+    CTA: "L"
+    CTC: "L"
+    CTG: "L"
+    CTT: "L"
+    CCA: "P"
+    CCC: "P"
+    CCG: "P"
+    CCT: "P"
+    CAC: "H"
+    CAT: "H"
+    CAA: "Q"
+    CAG: "Q"
+    CGA: "R"
+    CGC: "R"
+    CGG: "R"
+    CGT: "R"
+    GTA: "V"
+    GTC: "V"
+    GTG: "V"
+    GTT: "V"
+    GCA: "A"
+    GCC: "A"
+    GCG: "A"
+    GCT: "A"
+    GAC: "D"
+    GAT: "D"
+    GAA: "E"
+    GAG: "E"
+    GGA: "G"
+    GGC: "G"
+    GGG: "G"
+    GGT: "G"
+    TCA: "S"
+    TCC: "S"
+    TCG: "S"
+    TCT: "S"
+    TTC: "F"
+    TTT: "F"
+    TTA: "L"
+    TTG: "L"
+    TAC: "Y"
+    TAT: "Y"
+    TAA: "*"
+    TAG: "*"
+    TGC: "a" #N-Me-Ala
+    TGT: "a" #N-Me-Ala
+    TGA: "*"
+    TGG: "W"
+
+  custom_ini_aa: "b" #N-biotin-Phe 
+
+LibraryDesigns:
+  dna_templates:
+    - "ATGAGTGATATTACGGCTGAGAACCTCTACTTCCAGAGC112112112112112112112112324112112112112112112112112GGCAGCTACCCATATGACGTGCCCGACTATGCAGGCCGATAGTGACGGGGGGCGGAAA"
+    
+  dna_monomers:
+    1: ["A", "G", "T", "C"]
+    2: ["T"]
+    3: ["A"]
+    4: ["G"]
+    
+  pep_templates:
+    - "bSDITAENLYFQS11111111321111111GSYPYDVPDYAGR"
+    
+  pep_monomers:
+    1: ["A", "a", "D", "F", "G", "H", "I", "L", "N", "P", "R", "S", "T", "V", "Y"]
+    2: ["A", "D", "E", "F", "G", "H", "I", "K", "L", "N", "R", "S", "T", "V", "W", "Y"]
+    3: ["d"]
+
+TrackerConfig:
+  logs: "./outputs/Vinogradov_DOMEK"                 # Directory for writing logs to
+  parser_out: "./outputs/Vinogradov_DOMEK"           # Directory that stores fastq parser outputs
+  analysis_out: "./outputs/Vinogradov_DOMEK"         # Directory that stores outputs of data analysis operations
+
+LoggerConfig:
+  verbose: true                     # Verbose loggers print to the console
+  log_to_file: true                 # Write logs to file
+  level: "INFO"                     # Logger level; accepted values: "DEBUG", "INFO", "WARNING", "ERROR"

@@ -1,0 +1,42 @@
+experiment: "Angelini_yeast_selections"
+
+LibraryDesigns:
+  dna_templates:
+    - "111111111111GGAAGAAGGTGTTCAATTGGACAAGAGAGAAGCTTGT111111111111111111111TGTTCCGGTGGTGGTGGCTCTGGTGGCGGTGGTAGCGGAGGTGGTGGTAGTTACCCATACGA"
+    - "111111111111GGAAGAAGGTGTTCAATTGGACAAGAGAGAAGCTTGT111111111111111111111111111TGTTCCGGTGGTGGTGGCTCTGGTGGCGGTGGTAGCGGAGGTGGTGGTAGTTACCCATACGA"
+    - "111111111111GGAAGAAGGTGTTCAATTGGACAAGAGAGAAGCTTGT111111111111111111111111111111111111111TGTTCCGGTGGTGGTGGCTCTGGTGGCGGTGGTAGCGGAGGTGGTGGTAGTTACCCATACGA"
+    - "111111111111GGAAGAAGGTGTTCAATTGGACAAGAGAGAAGCTTGT111111111111111111111111111111111111111TGTTCCGGTGGTGGTGGCTCTGGTGGCGGTGGTAGCGGAGGTGGTGGTAGTTACCCATACGA"
+    - "111111111111GGAAGAAGGTGTTCAATTGGACAAGAGAGAAGCTTGT111111111111111111111111111111111111111TGTTCCGGTGGTGGTGGCTCTGGTGGCGGTGGTAGCGGAGGTGGTGGTAGTTACCCATACGA"
+        
+  dna_monomers:
+    1: ["A", "G", "T", "C"] #N
+
+  pep_templates:
+    - "E3211111112SG"
+    - "E321111111112SG"
+    - "E3211121111111112SG"
+    - "E3211111121111112SG"
+    - "E3211111111121112SG"
+ 
+  pep_monomers:
+    1: ["A", "C", "D", "E", "F", "G", "H", "I", "K", "L", "M", "N", "P", "Q", "R", "S", "T", "V", "W", "Y"]
+    2: ["C"]
+    3: ["A"]
+
+FastqParserConfig:
+  sample_barcodes:
+    bc1: "CACAGAGATACT"
+    bc2: "AGTGTACACTGC"  
+    bc3: "GACACTGATGGT"  
+    bc4: "CCTTACGATGTG"  
+    bc5: "TCTGAGGATCCA"  
+
+TrackerConfig:
+  logs: "./outputs/Angelini_yeast_v2"                 # Directory for writing logs to
+  parser_out: "./outputs/Angelini_yeast_v2"           # Directory that stores fastq parser outputs
+  analysis_out: "./outputs/Angelini_yeast_v2"         # Directory that stores outputs of data analysis operations
+  
+LoggerConfig:
+  verbose: true                     # Verbose loggers print to the console
+  log_to_file: true                 # Write logs to file
+  level: "INFO"                     # Logger level; accepted values: "DEBUG", "INFO", "WARNING", "ERROR"

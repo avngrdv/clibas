@@ -1,0 +1,158 @@
+experiment: "Payne_CCL22_selection"
+
+constants:
+  description: |
+    Star symbol (*) is internally reserved for stop codons that terminate
+    translation.
+    
+    Plus and underscore symbols (+ and _) are internally reserved tokens.
+    Numerals (1234567890) are internally reserved for library design 
+    specifications. These symbols (123456790+_) should not be used to
+    encode amino acids.
+    
+    Other symbols are OK.   
+    
+  translation_table:
+    ATA: "I"
+    ATC: "I"
+    ATT: "I"
+    ATG: "y"
+    ACA: "T"
+    ACC: "T"
+    ACG: "T"
+    ACT: "T"
+    AAC: "N"
+    AAT: "N"
+    AAA: "K" 
+    AAG: "K"
+    AGC: "S"
+    AGT: "S"
+    AGA: "R"
+    AGG: "R"
+    CTA: "L" 
+    CTC: "L"
+    CTG: "L"
+    CTT: "L"
+    CCA: "P" 
+    CCC: "P" 
+    CCG: "P" 
+    CCT: "P"
+    CAC: "H"
+    CAT: "H" 
+    CAA: "Q" 
+    CAG: "Q"
+    CGA: "R"
+    CGC: "R"
+    CGG: "R"
+    CGT: "R"
+    GTA: "V" 
+    GTC: "V" 
+    GTG: "V"
+    GTT: "V"
+    GCA: "A" 
+    GCC: "A" 
+    GCG: "A" 
+    GCT: "A"
+    GAC: "D" 
+    GAT: "D"
+    GAA: "E" 
+    GAG: "E"
+    GGA: "G" 
+    GGC: "G"
+    GGG: "G"
+    GGT: "G"
+    TCA: "S" 
+    TCC: "S" 
+    TCG: "S"
+    TCT: "S"
+    TTC: "F" 
+    TTT: "F" 
+    TTA: "L" 
+    TTG: "L"
+    TAC: "Y" 
+    TAT: "Y" 
+    TAA: "*" 
+    TAG: "*"
+    TGC: "C"
+    TGT: "C" 
+    TGA: "*" 
+    TGG: "W"
+
+  custom_ini_aa: "Y"     
+  
+  aa_SMILES:
+    A: "N[C@@H](C)C(=O)"           
+    C: "N[C@@H](CS)C(=O)"
+    D: "N[C@@H](CC(=O)O)C(=O)"
+    E: "N[C@@H](CCC(=O)O)C(=O)"
+    F: "N[C@@H](Cc1ccccc1)C(=O)"
+    G: "NCC(=O)"
+    H: "N[C@@H](Cc1c[nH]cn1)C(=O)"
+    I: "N[C@@H]([C@H](CC)C)C(=O)"
+    K: "N[C@@H](CCCCN)C(=O)"       
+    L: "N[C@@H](CC(C)C)C(=O)"
+    N: "N[C@@H](CC(=O)N)C(=O)"
+    P: "O=C[C@@H]1CCCN1"
+    Q: "N[C@@H](CCC(=O)N)C(=O)"
+    R: "N[C@@H](CCCNC(=N)N)C(=O)"
+    S: "N[C@@H](CO)C(=O)"
+    T: "N[C@@H]([C@H](O)C)C(=O)"
+    V: "N[C@@H](C(C)C)C(=O)"
+    W: "N[C@@H](Cc1c[nH]c2c1cccc2)C(=O)"
+    Y: "N[C@@H](Cc1ccc(O)cc1)C(=O)"
+    y: "N[C@@H](CC1=CC=C(OS(O)(=O)=O)C=C1)C=O"
+    
+  complement_table:
+    - "ATCGN"
+    - "TAGCN"
+    
+LibraryDesigns:
+  dna_templates:
+    - "TAATACGACTCACTATAGGGTTAACTTTAACAAGGAGAAAAACATG112112112112TGCTCCGCGTTATCTGCATAGGACGGGGGGCGGAAA"
+    - "TAATACGACTCACTATAGGGTTAACTTTAACAAGGAGAAAAACATG112112112112112TGCTCCGCGTTATCTGCATAGGACGGGGGGCGGAAA"
+    - "TAATACGACTCACTATAGGGTTAACTTTAACAAGGAGAAAAACATG112112112112112112TGCTCCGCGTTATCTGCATAGGACGGGGGGCGGAAA"
+    - "TAATACGACTCACTATAGGGTTAACTTTAACAAGGAGAAAAACATG112112112112112112112TGCTCCGCGTTATCTGCATAGGACGGGGGGCGGAAA"
+    - "TAATACGACTCACTATAGGGTTAACTTTAACAAGGAGAAAAACATG112112112112112112112112TGCTCCGCGTTATCTGCATAGGACGGGGGGCGGAAA"
+    - "TAATACGACTCACTATAGGGTTAACTTTAACAAGGAGAAAAACATG112112112112112112112112112TGCTCCGCGTTATCTGCATAGGACGGGGGGCGGAAA"
+    - "TAATACGACTCACTATAGGGTTAACTTTAACAAGGAGAAAAACATG112112112112112112112112112112TGCTCCGCGTTATCTGCATAGGACGGGGGGCGGAAA"
+    - "TAATACGACTCACTATAGGGTTAACTTTAACAAGGAGAAAAACATG112112112112112112112112112112112TGCTCCGCGTTATCTGCATAGGACGGGGGGCGGAAA"
+    - "TAATACGACTCACTATAGGGTTAACTTTAACAAGGAGAAAAACATG112112112112112112112112112112112112TGCTCCGCGTTATCTGCATAGGACGGGGGGCGGAAA"
+    - "TAATACGACTCACTATAGGGTTAACTTTAACAAGGAGAAAAACATG112112112112112112112112112112112112112TGCTCCGCGTTATCTGCATAGGACGGGGGGCGGAAA"
+    - "TAATACGACTCACTATAGGGTTAACTTTAACAAGGAGAAAAACATG112112112112112112112112112112112112112112TGCTCCGCGTTATCTGCATAGGACGGGGGGCGGAAA"
+    - "TAATACGACTCACTATAGGGTTAACTTTAACAAGGAGAAAAACATG112112112112112112112112112112112112112112112TGCTCCGCGTTATCTGCATAGGACGGGGGGCGGAAA"
+    
+  dna_monomers:
+    1: ["A", "G", "T", "C"] #N
+    2: ["G", "C"] #S
+    
+  pep_templates:
+    - "211113SALSA"
+    - "2111113SALSA"
+    - "21111113SALSA"
+    - "211111113SALSA"
+    - "2111111113SALSA"
+    - "21111111113SALSA"
+    - "211111111113SALSA"
+    - "2111111111113SALSA"
+    - "21111111111113SALSA"
+    - "211111111111113SALSA"  
+    - "2111111111111113SALSA"
+    - "21111111111111113SALSA"    
+    
+  pep_monomers:
+    1: ["A", "C", "D", "E", "F", "G", "H", "I", "K", "L", "y", "N", "P", "Q", "R", "S", "T", "V", "W", "Y"]
+    2: ["Y"]
+    3: ["C"]
+
+TrackerConfig:
+  logs: "./outputs/Payne_CCL22"                 # Directory for writing logs to
+  parser_out: "./outputs/Payne_CCL22"           # Directory that stores fastq parser outputs
+  analysis_out: "./outputs/Payne_CCL22"         # Directory that stores outputs of data analysis operations
+  
+LoggerConfig:
+  verbose: true                     # Verbose loggers print to the console
+  log_to_file: false                # Write logs to file
+  level: "INFO"                     # Logger level; accepted values: "DEBUG", "INFO", "WARNING", "ERROR"
+
+FastqParserConfig:
+  orf_locator: "AGGAGA.....ATG"     # A regex pattern that has to match to initiate the ORF

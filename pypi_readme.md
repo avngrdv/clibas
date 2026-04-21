@@ -1,12 +1,3 @@
-<div align="center">
-  <picture>
-    <source srcset="/docs/source/_static/clibas_logo_dark_v1.png" media="(prefers-color-scheme: dark)">
-    <img src="/docs/source/_static/clibas_logo_v1.png" alt="clibas logo" width="50%">
-  </picture>
-</div>
-
-<div align="center">
-
 [![PyPI version](https://img.shields.io/pypi/v/clibas?color=blue)](https://pypi.org/project/clibas/)
 [![Python versions](https://img.shields.io/pypi/pyversions/clibas)](https://pypi.org/project/clibas/)
 [![Downloads](https://img.shields.io/pypi/dm/clibas)](https://pypi.org/project/clibas/)
@@ -18,6 +9,9 @@
 # clibas
 
 Welcome to clibas – a Python package for analyzing NGS data from combinatorial genetically encoded libraries, including techniques like mRNA/phage/yeast display and SELEX selections. The library provides fast and scalable tools for parsing, filtering, and analyzing .fastq files at both DNA and translated peptide levels, with a high-level API to build sophisticated analysis pipelines in just a few lines of code.
+
+## Documentation & examples
+For full documentation, including a tutorial, API reference, and jupyter notebook examples, please visit our <a href="https://clibas.readthedocs.io/en/latest/index.html#" target="_blank" rel="noopener noreferrer">Read the Docs</a> page. Example .ipynb notebooks are also available in this repo in `docs\source\examples`
 
 ## Quick start
 
@@ -35,9 +29,6 @@ This will also install `scikit-learn`, `rdkit`, `umap-learn`, `hdbscan`, `plotly
 pip install clibas
 ```
 
-## Documentation & examples
-For full documentation, including a tutorial, API reference, and jupyter notebook examples, please visit our <a href="https://clibas.readthedocs.io/en/latest/index.html#" target="_blank" rel="noopener noreferrer">Read the Docs</a> page. Example .ipynb notebooks are also available in this repo in `docs\source\examples`
-
 ## Contact
 
 To report bugs, seek technical assistance, and general correspondence, please contact Alex Vinogradov at <vngrdv@nus.edu.sg>, or here on github. 
@@ -46,7 +37,7 @@ Any contributions – code, feature requests, jupyter notebooks – are welcome!
 
 ## Links
 
-<a href="https://pypi.org/project/clibas/" target="_blank" rel="noopener noreferrer">Project on PyPI</a>
+<a href="https://github.com/avngrdv/clibas" target="_blank" rel="noopener noreferrer">Project on GitHub</a>
 <a href="https://clibas.readthedocs.io/en/latest/index.html#" target="_blank" rel="noopener noreferrer">Documentation</a>
 Accompanying paper: link tbd \
 <a href="https://vinogradov.science/" target="_blank" rel="noopener noreferrer">Vinogradov Lab at NUS</a>
