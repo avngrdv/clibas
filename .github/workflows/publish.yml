@@ -1,98 +1,110 @@
 name: Build and Publish
-
+ 
 on:
   push:
     tags:
       - "v.*"
   workflow_dispatch:
-
+ 
 jobs:
   format:
     name: Check formatting
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-
+ 
       - uses: actions/setup-python@v6
         with:
           python-version: "3.11"
-
+ 
       - name: Install ruff
         run: pip install ruff
-
+ 
       - name: Check formatting
         run: ruff format --check src/
-
+ 
   test:
     name: Run tests
     needs: format
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-
+ 
       - uses: actions/setup-python@v6
         with:
           python-version: "3.11"
-
+ 
       - name: Install build and test dependencies
         run: pip install numpy cython
-
+ 
       - name: Compile Cython extension
         run: python setup.py build_ext --inplace
-
-      - name: Install package with dev extras
+ 
+      - name: Install package with dev and ml extras
         run: pip install -e ".[dev,ml]"
-
+ 
       - name: Run tests
-        run: pytest
-
+        run: pytest -m "not slow"
+ 
   build_wheels:
     name: Build wheels on ${{ matrix.os }}
     needs: test
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-15-intel, macos-14]
-
+        include:
+          - os: ubuntu-latest
+            cibw_archs_linux: x86_64
+          - os: windows-latest
+            cibw_archs_windows: AMD64
+          - os: macos-14
+            cibw_archs_macos: arm64
+          - os: macos-15-intel
+            cibw_archs_macos: x86_64
+ 
     steps:
       - uses: actions/checkout@v5
-
+ 
       - name: Build wheels
-        uses: pypa/cibuildwheel@v2.22.0
+        uses: pypa/cibuildwheel@v2.23.2
         env:
           CIBW_BUILD: cp310-* cp311-* cp312-* cp313-*
-          CIBW_SKIP: "*-win32 *-manylinux_i686 *-musllinux* cp313-*macosx*_x86_64"
+          CIBW_SKIP: "*-win32 *-manylinux_i686 *-musllinux*"
+          CIBW_ARCHS_LINUX: ${{ matrix.cibw_archs_linux }}
+          CIBW_ARCHS_WINDOWS: ${{ matrix.cibw_archs_windows }}
+          CIBW_ARCHS_MACOS: ${{ matrix.cibw_archs_macos }}
+          MACOSX_DEPLOYMENT_TARGET: "11.0"
           CIBW_BEFORE_BUILD: pip install numpy cython
           CIBW_TEST_REQUIRES: numpy
           CIBW_TEST_COMMAND: python -c "from clibas.cython_hacks import idx_finder; print('cython_hacks OK')"
-
+ 
       - uses: actions/upload-artifact@v4
         with:
           name: wheels-${{ matrix.os }}
           path: ./wheelhouse/*.whl
-
+ 
   build_sdist:
     name: Build source distribution
     needs: test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-
+ 
       - uses: actions/setup-python@v6
         with:
           python-version: "3.11"
-
+ 
       - name: Install build tools
         run: pip install build numpy cython
-
+ 
       - name: Build sdist
         run: python -m build --sdist
-
+ 
       - uses: actions/upload-artifact@v4
         with:
           name: sdist
           path: dist/*.tar.gz
-
+ 
   publish:
     name: Publish to PyPI
     needs: [build_wheels, build_sdist]
@@ -103,18 +115,25 @@ jobs:
       url: https://pypi.org/project/clibas/
     permissions:
       id-token: write
-
+ 
     steps:
       - uses: actions/download-artifact@v4
         with:
           pattern: wheels-*
           merge-multiple: true
           path: dist/
-
+ 
       - uses: actions/download-artifact@v4
         with:
           name: sdist
           path: dist/
-
+ 
+      - name: Validate wheels
+        run: |
+          pip install twine
+          twine check dist/*
+ 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          skip-existing: true

@@ -31,7 +31,7 @@ pip install clibas
 
 ## Contact
 
-To report bugs, seek technical assistance, and general correspondence, please contact Alex Vinogradov at <vngrdv@nus.edu.sg>, or here on github. 
+To report bugs, seek technical assistance, and general correspondence, please contact Alex Vinogradov at <vngrdv@nus.edu.sg>, or on [github](https://github.com/avngrdv/clibas). 
 
 Any contributions – code, feature requests, jupyter notebooks – are welcome! 
 
