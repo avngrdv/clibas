@@ -7,7 +7,7 @@ sys.path.insert(0, os.path.abspath("../../src"))
 project = "clibas"
 copyright = "2026, Alexander Vinogradov"
 author = "Alexander Vinogradov"
-release = "0.4.2"
+release = "0.4.3"
 
 # general config
 extensions = [

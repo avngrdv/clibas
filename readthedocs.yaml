@@ -1,9 +1,10 @@
 version: 2
-
 build:
   os: ubuntu-24.04
   tools:
     python: "3.11"
+  apt_packages:
+    - pandoc
   jobs:
     pre_build:
       - pip install numpy cython
@@ -15,6 +16,7 @@ python:
       path: .
       extra_requirements:
         - ml
+    - requirements: docs/requirements.txt
 
 sphinx:
   builder: html
