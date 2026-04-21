@@ -5,7 +5,7 @@ from .dispatchers import Dispatcher
 from .parsers import FastqParser
 from .pipelines import Pipeline
 
-__version__ = "0.4.3"
+__version__ = "0.4.4"
 
 # initialize later - need to pass the location of the config file
 _c_instance = None

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "clibas"
-version = "0.4.3"
+version = "0.4.4"
 description = "Combinatorial Library Analysis Suite: analysis of NGS data from genetically encoded libraries"
 authors = [{name = "Alexander Vinogradov", email = "a_vngrdv@pm.me"}]
 readme = "pypi_readme.md"
