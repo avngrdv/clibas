@@ -61,8 +61,8 @@ Any contributions – code, jupyter notebooks, etc – are welcome!
 (Links)=
 ## Links
 
-Project on PyPI: link tbd \
 Accompanying paper: link tbd \
+Project on PyPI: link tbd \
 [Project on GitHub](https://github.com/avngrdv/clibas){target=_blank} \
 [Vinogradov Lab at NUS](https://vinogradov.science/){target=_blank}
 
