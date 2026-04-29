@@ -8,9 +8,9 @@ After a selection experiment is performed, an enriched library is obtained and i
 
 ## Building clibas pipelines
 
-At a high level, clibas is built around *analysis pipelines*.
+At a high level, clibas is all about building *analysis pipelines*.
 
-A pipeline is an ordered sequence of operations applied to a dataset. Each operation receives data as input and returns data as output, either modified or unchanged. Filtering operations remove reads that fail certain criteria, analysis operations compute statistics and write results to files, and transformation operations modify the data. For example, in silico translatiin of DNA sequences into peptides is an operation, and plotting the distribution of DNA sequence lengths in a dataset is also an operation.
+A pipeline is an ordered sequence of operations applied to a dataset. Each operation receives data as input and returns data as output, either modified or not. Filtering operations remove reads that fail certain criteria, analysis operations compute statistics and write results to files, and transformation operations modify the data. For example, in silico translation of DNA sequences into peptides is an operation, and plotting the distribution of DNA sequence lengths in a dataset is also an operation.
 
 The principle is simple: every operation takes data in and returns data out.
 
@@ -27,7 +27,7 @@ C.initialize(config_path='test_config.yaml')
 
 The `.yaml` config file typically contains information about the library design, the genetic code, and various hyperparameters such as input and output directories. Details on writing config files are provided in a section below.
 
-A config file is not strictly required. For simple workflows, clibas can also be initialized with default settings:
+A config file is not strictly required. For simple workflows, clibas can also be initialized with default settings and without specifying a library design:
 
 ```python
 import clibas as C
@@ -89,11 +89,11 @@ In this example, all reads containing DNA sequences outside the range of 120–1
 
 ### Library design
 
-The main feature that enables highly customizable workflows in clibas is the concept of library design. Clibas is primarily intended for cases where NGS reads originate from _designed_ libraries containing both constant and variable regions. Variable regions may differ in length and composition, but their overall arrangement within the sequence is known.
+The main feature that enables highly customizable workflows in clibas is the library design abstraction. Clibas is primarily intended for cases where NGS reads originate from _designed_ libraries containing both constant and variable regions. Variable regions may differ in length and composition, but their overall arrangement within the sequence is known.
 
 Information about library design is provided through a library-specific config file (see the section below for writing config files). Designs can be specified for both DNA and peptide sequences using the same general rules.
 
-Randomized amino acids or bases (referred to as tokens) are represented by numerals from `0–9`. Tokens that are not subject to randomization (e.g., linker sequences) are represented using the standard one-letter encoding (`A`, `C`, `T`, `G` for DNA and the standard amino acid alphabet for peptides). *A continuous stretch of either randomized or fixed tokens forms a region within the template sequence.* Regions are indexed starting from 0.
+Randomized amino acids or nucleotides (referred to as tokens) are represented by numerals from `0–9`. Tokens that are not subject to randomization (e.g., linker sequences) are represented using the standard one-letter encoding (`A`, `C`, `T`, `G` for DNA and the standard amino acid alphabet for peptides). *A continuous stretch of either randomized or fixed tokens forms a region within the template sequence.* Regions are indexed starting from 0.
 
 For example:
 
@@ -141,7 +141,7 @@ Together, these operations retain only those peptides that contain at most two m
 
 Other common operations available from `C.fastq_parser` include in silico translation of DNA sequences into peptides, trimming DNA reads, filtering sequences based on variable region composition, and removing ambiguous reads (such as DNA sequences containing `N` base calls). The API reference provides a complete list of available operations.
 
-Because pipeline operations can reference individual regions, the order in which operations are applied is important. For example, a peptide may contain ambiguous amino acids (encoded as `_` by clibas) in one of its constant regions. This can occur if the sequencer assigns an `"N"` base call, resulting in an ambiguous codon that cannot be translated into a single amino acid. Suppose a peptide contains `_` in constant region 0. If we first apply an operation such as `C.fastq_parser.filt_ambiguous(where='pep')`, which removes reads containing ambiguous (`_`) in peptide sequences, and then truncate peptide sequences to a specific region (for example, using `C.fastq_parser.fetch_at(where='pep', loc=[2])`), the peptide will be removed. However, if these operations are applied in the opposite order, the peptide will survive, since the ambiguity is lost after the `fetch_at` step. This illustrates that pipeline _order_ can directly affect results; filtering operations are not commutative. 
+Because pipeline operations can reference individual regions, the order in which operations are applied is important. For example, a peptide may contain ambiguous amino acids (encoded as `_` or `+` by clibas) in one of its constant regions. This can occur if the sequencer assigns an `"N"` base call, resulting in an ambiguous codon that cannot be translated to a single amino acid. Suppose a peptide contains `_` in constant region 0. If we first apply an operation such as `C.fastq_parser.filt_ambiguous(where='pep')`, which removes reads containing ambiguous (`_`) in peptide sequences, and then truncate peptide sequences to a specific region (for example, using `C.fastq_parser.fetch_at(where='pep', loc=[2])`), the peptide will be removed. However, if these operations are applied in the opposite order, the peptide will survive, since the ambiguity is lost after the `fetch_at` step. This illustrates that pipeline _order_ can directly affect results; *filtering operations are not commutative*. 
 
 ## Writing config files
 
@@ -193,7 +193,7 @@ For some applications (e.g., SELEX), only DNA-level design makes sense – it is
 
 The distinction between *constant* and *variable* regions is a modeling convention and not a strict rule. In some libraries, certain positions within a nominally constant region may be functionally critical, while others may tolerate variation. The library design system is flexible enough to represent such cases.
 
-For example, a typical mRNA display library of cyclic peptides might be encoded with a design like this: `y1111111CGSGSGS`, where `y` is a custom initiator amino acid used for peptide cyclization with a downstream cysteine `C`. The cysteine residue (`C`) is therefore essential. We may wish to ensure that all analyzed peptides contain this cysteine, while allowing variability in the surrounding region (`GSGSGS`). This can be achieved by defining the cysteine position as a randomized token set that permits only one amino acid:
+For example, a typical mRNA display library of cyclic peptides might be encoded with a design like this: `y1111111CGSGSGS`, where `y` is a custom initiator amino acid used for peptide cyclization with a downstream cysteine `C`. The cysteine residue (`C`) is therefore essential. We may wish to ensure that all analyzed peptides contain this cysteine, while allowing variability in the neighboring region (`GSGSGS`). This can be achieved by defining the cysteine position as a randomized token set that permits only one amino acid:
 
 ```yaml
 LibraryDesigns:
@@ -247,7 +247,7 @@ In this example, translation will only begin if a Shine-Dalgarno sequence (`AGGA
 
 ### Optional chemical representations
 
-When performing UMAP-HDBSCAN analyses, clibas can optionally use RDKit fingerprints of amino acids to better capture chemical similarity between tokens. In this case, the chemical structures of amino acids can be provided using SMILES strings.
+When performing UMAP-HDBSCAN analyses, clibas can optionally use RDKit fingerprints of amino acids or nucleotides to better capture chemical similarity between tokens. In this case, the chemical structures of token (amino acids below as an example) can be provided using SMILES strings.
 
 ```yaml
 constants:
@@ -259,7 +259,7 @@ constants:
     ...
 ```
 
-If this section is omitted, UMAP-HDBSCAN analyses can still use a simple one-hot encoding of amino acids.
+If this section is omitted, UMAP-HDBSCAN analyses can still use simple one-hot encoding.
 
 ### Output and logging configuration
 
@@ -361,7 +361,7 @@ The library is written in numpy and is generally optimized for speed. The table 
 
 A dataset of 8.85M reads is processed in ~3 minutes, including UMAP-HDBSCAN clustering. In silico translation is the slowest operation (aside from UMAP–HDBSCAN analyses, whose runtime varies depending on the dataset). Nonetheless, translation runs at roughly *0.2 million reads per second*, although the exact speed depends on ORF length.
 
-By default, <u>all operations are performed in memory</u>. Sequences (DNA, Q scores, and peptides) are stored as byte strings, so each token takes one byte of memory. This is typically sufficient for datasets containing fewer than ~10 million reads, depending on available RAM. For larger datasets, memory usage can become limiting. To accommodate different dataset sizes, clibas provides three data-loading strategies.
+By default, <u>all operations are performed in memory</u>. Sequences (DNA, Q scores, and peptides) are stored as byte strings, so each token takes one byte of memory. This is typically sufficient for datasets containing fewer than ~10 million reads, depending on the available RAM. For larger datasets, memory usage can become limiting. To accommodate different dataset sizes, clibas provides three data-loading strategies.
 
 The first option loads all files into memory at once:
 

@@ -35,9 +35,13 @@ For step-by-step instructions on building analysis pipelines, see the Tutorial s
 (Installation)=
 ## Installation
 
-It is recommended that clibas is installed in a dedicated virtual environment to avoid potential version conflicts with existing packages. Any virtual environment (e.g., `conda` or `pipenv`) will work for this purpose. 
+It is recommended that clibas is installed in a dedicated virtual environment to avoid potential version conflicts with existing packages. Note that clibas is written for python 3.10-3.13. Any virtual environment manager (e.g., `conda` or `pipenv`) will work for this purpose. For example, a conda environment can be created like this:
 
-The library can be installed from PyPI:
+```bash
+conda create -n clibas_env python=3.11
+```
+
+The library can then be installed from PyPI:
 
 ```bash
 pip install clibas[ml]
@@ -56,7 +60,7 @@ Source project is available on GitHub: [clibas](https://github.com/avngrdv/cliba
 
 To report bugs, seek technical assistance, and general correspondence, please contact Alex Vinogradov at <vngrdv@nus.edu.sg>, or on [GitHub](https://github.com/avngrdv/clibas){target=_blank}. Please feel free also to request new features. 
 
-Any contributions – code, jupyter notebooks, etc – are welcome! 
+Any contributions – code, jupyter notebooks, bug reports – are welcome! 
 
 (Links)=
 ## Links
