@@ -39,6 +39,7 @@ It is recommended that clibas is installed in a dedicated virtual environment to
 
 ```bash
 conda create -n clibas_env python=3.11
+conda activate clibas_env
 ```
 
 The library can then be installed from PyPI:
