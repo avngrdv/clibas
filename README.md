@@ -24,9 +24,14 @@ For full documentation, including a tutorial, API reference, and jupyter noteboo
 
 ## Quick start
 
-It is recommended that clibas is installed in a dedicated virtual environment to avoid potential version conflicts with existing packages. Any virtual environment (e.g., `conda` or `pipenv`) will work for this purpose. 
+It is recommended that clibas is installed in a dedicated virtual environment to avoid potential version conflicts with existing packages. Any virtual environment manager (e.g., `conda` or `pipenv`) will work for this purpose. For example, a conda environment can be created like this:
 
-The library can be installed from PyPI:
+```bash
+conda create -n clibas_env python=3.11
+conda activate clibas_env
+```
+
+The library can then be installed from PyPI:
 
 ```bash
 pip install clibas[ml]
